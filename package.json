@@ -1,0 +1,27 @@
+{
+  "name": "fc-sales-cloud",
+  "version": "1.0.0",
+  "description": "FC加盟店向け売上管理システム（クラウド版）",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "pg": "^8.11.3",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "chart.js": "^4.4.0",
+    "react-chartjs-2": "^5.2.0",
+    "@supabase/supabase-js": "^2.38.0"
+  },
+  "devDependencies": {
+    "eslint": "^8",
+    "eslint-config-next": "14.0.0"
+  }
+}
