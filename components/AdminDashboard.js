@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export default function AdminDashboard({ user }) {
   const [activeTab, setActiveTab] = useState('stores')
@@ -13,6 +13,9 @@ export default function AdminDashboard({ user }) {
   const [message, setMessage] = useState('')
   const [salesRanking, setSalesRanking] = useState([])
   const [loadingRanking, setLoadingRanking] = useState(false)
+  const [csvLoading, setCsvLoading] = useState(false)
+  const [selectedStore, setSelectedStore] = useState('')
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     fetchStores()
@@ -105,6 +108,82 @@ export default function AdminDashboard({ user }) {
     setNewStore({ ...newStore, password })
   }
 
+  const handleCsvUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    setCsvLoading(true)
+    setMessage('')
+
+    try {
+      const text = await file.text()
+      const rows = text.split('\n').map(row => row.split(','))
+      
+      const dataRows = rows.slice(1).filter(row => row.length >= 3 && row[0].trim())
+
+      if (dataRows.length === 0) {
+        setMessage('有効なデータが見つかりません')
+        setCsvLoading(false)
+        return
+      }
+
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/sales/csv-upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          csvData: dataRows,
+          store_id: selectedStore
+        })
+      })
+
+      const result = await response.json()
+      
+      if (response.ok) {
+        setMessage(`CSVアップロード完了: ${result.success}件成功, ${result.errors}件エラー`)
+      } else {
+        setMessage(`エラー: ${result.error}`)
+      }
+    } catch (error) {
+      setMessage('CSVファイルの処理中にエラーが発生しました')
+    } finally {
+      setCsvLoading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleCsvDownload = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/sales/csv-download?store_id=${selectedStore}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `sales_data_store_${selectedStore}.csv`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+      } else {
+        setMessage('CSVダウンロードに失敗しました')
+      }
+    } catch (error) {
+      setMessage('CSVダウンロード中にエラーが発生しました')
+    }
+  }
+
   return (
     <div className="container">
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
@@ -163,6 +242,56 @@ export default function AdminDashboard({ user }) {
               ))}
             </tbody>
           </table>
+          
+          <div style={{ marginTop: '20px' }}>
+            <h4>CSV管理</h4>
+            <div style={{ marginBottom: '10px' }}>
+              <select
+                value={selectedStore}
+                onChange={(e) => setSelectedStore(e.target.value)}
+                style={{
+                  padding: '8px',
+                  marginRight: '10px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px'
+                }}
+              >
+                <option value="">店舗を選択</option>
+                {stores.map(store => (
+                  <option key={store.id} value={store.id}>
+                    {store.name}
+                  </option>
+                ))}
+              </select>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                onChange={handleCsvUpload}
+                style={{ display: 'none' }}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={csvLoading || !selectedStore}
+                className="btn btn-warning"
+                style={{ marginRight: '10px' }}
+              >
+                {csvLoading ? 'アップロード中...' : 'CSV取込'}
+              </button>
+              
+              <button
+                onClick={handleCsvDownload}
+                disabled={!selectedStore}
+                className="btn btn-secondary"
+              >
+                CSV出力
+              </button>
+            </div>
+            <small style={{ color: '#666' }}>
+              CSV形式: A列=日付, B列=税込売上, C列=客数
+            </small>
+          </div>
         </div>
       )}
 

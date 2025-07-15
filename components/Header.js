@@ -1,7 +1,7 @@
 export default function Header({ user, onLogout }) {
   return (
     <header className="header">
-      <h1>LM売上管理</h1>
+      <h1 style={{ fontSize: '20px' }}>LM売上管理</h1>
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
         <span>
           {user.role === 'admin' ? '本部管理者' : user.store_name} - {user.username}

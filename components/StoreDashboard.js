@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export default function StoreDashboard({ user }) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [salesData, setSalesData] = useState({})
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [csvLoading, setCsvLoading] = useState(false)
+  const fileInputRef = useRef(null)
 
   const currentYear = currentDate.getFullYear()
   const currentMonth = currentDate.getMonth() + 1
@@ -136,6 +138,84 @@ export default function StoreDashboard({ user }) {
     return '#000000' // 平日：黒
   }
 
+  const handleCsvUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    setCsvLoading(true)
+    setMessage('')
+
+    try {
+      const text = await file.text()
+      const rows = text.split('\n').map(row => row.split(','))
+      
+      // ヘッダー行をスキップ
+      const dataRows = rows.slice(1).filter(row => row.length >= 3 && row[0].trim())
+
+      if (dataRows.length === 0) {
+        setMessage('有効なデータが見つかりません')
+        setCsvLoading(false)
+        return
+      }
+
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/sales/csv-upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          csvData: dataRows,
+          store_id: user.store_id
+        })
+      })
+
+      const result = await response.json()
+      
+      if (response.ok) {
+        setMessage(`CSVアップロード完了: ${result.success}件成功, ${result.errors}件エラー`)
+        fetchMonthlySalesData()
+      } else {
+        setMessage(`エラー: ${result.error}`)
+      }
+    } catch (error) {
+      setMessage('CSVファイルの処理中にエラーが発生しました')
+    } finally {
+      setCsvLoading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleCsvDownload = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/sales/csv-download?year=${currentYear}&month=${currentMonth}&store_id=${user.store_id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `sales_data_${currentYear}${currentMonth.toString().padStart(2, '0')}.csv`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+      } else {
+        setMessage('CSVダウンロードに失敗しました')
+      }
+    } catch (error) {
+      setMessage('CSVダウンロード中にエラーが発生しました')
+    }
+  }
+
   const monthlyTotals = getMonthlyTotals()
 
   return (
@@ -191,7 +271,7 @@ export default function StoreDashboard({ user }) {
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button
             onClick={handleUpdateMonth}
             disabled={loading}
@@ -199,10 +279,10 @@ export default function StoreDashboard({ user }) {
               backgroundColor: loading ? '#ccc' : '#007bff',
               color: 'white',
               border: 'none',
-              padding: '8px 16px',
+              padding: '6px 12px',
               borderRadius: '3px',
               cursor: loading ? 'not-allowed' : 'pointer',
-              fontSize: '12px',
+              fontSize: '11px',
               fontWeight: 'bold'
             }}
           >
@@ -215,14 +295,54 @@ export default function StoreDashboard({ user }) {
               backgroundColor: '#28a745',
               color: 'white',
               border: 'none',
-              padding: '8px 16px',
+              padding: '6px 12px',
               borderRadius: '3px',
               cursor: 'pointer',
-              fontSize: '12px',
+              fontSize: '11px',
               fontWeight: 'bold'
             }}
           >
             LUIDA注文
+          </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleCsvUpload}
+            style={{ display: 'none' }}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={csvLoading}
+            style={{
+              backgroundColor: csvLoading ? '#ccc' : '#ffc107',
+              color: 'black',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '3px',
+              cursor: csvLoading ? 'not-allowed' : 'pointer',
+              fontSize: '11px',
+              fontWeight: 'bold'
+            }}
+          >
+            {csvLoading ? 'アップロード中...' : 'CSV取込'}
+          </button>
+
+          <button
+            onClick={handleCsvDownload}
+            style={{
+              backgroundColor: '#6c757d',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '3px',
+              cursor: 'pointer',
+              fontSize: '11px',
+              fontWeight: 'bold'
+            }}
+          >
+            CSV出力
           </button>
         </div>
 
