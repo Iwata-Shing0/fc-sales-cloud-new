@@ -151,10 +151,7 @@ export default function StoreDashboard({ user }) {
         marginBottom: '10px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
       }}>
-        <h2 style={{ margin: '0 0 10px 0', fontSize: '18px', textAlign: 'center' }}>
-          LM売上管理
-        </h2>
-        <div style={{ textAlign: 'center', fontSize: '14px', marginBottom: '10px' }}>
+        <div style={{ textAlign: 'center', fontSize: '16px', marginBottom: '10px', fontWeight: 'bold' }}>
           {user.store_name}
         </div>
         
