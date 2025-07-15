@@ -8,18 +8,27 @@ export default async function handler(req, res) {
 
   try {
     const { username, password } = req.body
+    console.log('ログイン試行:', { username, passwordLength: password?.length })
 
     if (!username || !password) {
       return res.status(400).json({ message: 'ユーザー名とパスワードが必要です' })
     }
 
+    console.log('ユーザー検索中:', username)
     const user = await User.findByUsername(username)
+    console.log('ユーザー検索結果:', user ? 'found' : 'not found')
+    
     if (!user) {
+      console.log('ユーザーが見つかりません:', username)
       return res.status(401).json({ message: 'ユーザー名またはパスワードが間違っています' })
     }
 
+    console.log('パスワード検証中...')
     const isValid = await User.validatePassword(password, user.password)
+    console.log('パスワード検証結果:', isValid)
+    
     if (!isValid) {
+      console.log('パスワードが一致しません')
       return res.status(401).json({ message: 'ユーザー名またはパスワードが間違っています' })
     }
 
