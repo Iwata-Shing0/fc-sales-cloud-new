@@ -92,10 +92,6 @@ export default function Login({ onLogin }) {
             </button>
           </form>
           
-          <div style={{ marginTop: '20px', fontSize: '14px', color: '#666', textAlign: 'center' }}>
-            <p><strong>デモアカウント:</strong></p>
-            <p>管理者: admin / admin</p>
-          </div>
         </div>
       </div>
     </div>

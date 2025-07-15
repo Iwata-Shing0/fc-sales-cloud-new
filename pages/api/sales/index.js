@@ -45,8 +45,25 @@ export default async function handler(req, res) {
         const salesData = await SalesData.create(storeId, date, parseInt(sales_amount), parseInt(customer_count))
         res.status(201).json({ message: '売上データが保存されました', data: salesData })
       } else if (req.method === 'GET') {
-        const salesData = await SalesData.getAll()
-        res.status(200).json(salesData)
+        const { year, month, store_id } = req.query
+        
+        if (year && month) {
+          const startDate = new Date(year, month - 1, 1)
+          const endDate = new Date(year, month, 0)
+          
+          let storeId
+          if (req.user.role === 'admin') {
+            storeId = store_id
+          } else {
+            storeId = req.user.store_id
+          }
+          
+          const salesData = await SalesData.getByMonthAndStore(storeId, startDate, endDate)
+          res.status(200).json(salesData)
+        } else {
+          const salesData = await SalesData.getAll()
+          res.status(200).json(salesData)
+        }
       } else {
         res.status(405).json({ error: 'Method not allowed' })
       }
