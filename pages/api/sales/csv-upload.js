@@ -114,19 +114,55 @@ export default async function handler(req, res) {
         }
 
         try {
-          const { data, error } = await supabase
+          const dateString = date.toISOString().split('T')[0]
+          
+          // 既存レコードの確認
+          const { data: existingData, error: selectError } = await supabase
             .from('sales_data')
-            .upsert({
-              store_id: targetStoreId,
-              date: date.toISOString().split('T')[0],
-              sales_amount: salesAmount,
-              customer_count: customerCount,
-              updated_at: new Date().toISOString()
-            }, {
-              onConflict: 'store_id,date',
-              ignoreDuplicates: false
-            })
-            .select()
+            .select('*')
+            .eq('store_id', targetStoreId)
+            .eq('date', dateString)
+            .single()
+
+          if (selectError && selectError.code !== 'PGRST116') {
+            errors.push(`行${i + 1}: データベースエラー - ${selectError.message}`)
+            continue
+          }
+
+          let data, error
+
+          if (existingData) {
+            // 既存データを更新
+            const result = await supabase
+              .from('sales_data')
+              .update({
+                sales_amount: salesAmount,
+                customer_count: customerCount,
+                updated_at: new Date().toISOString()
+              })
+              .eq('store_id', targetStoreId)
+              .eq('date', dateString)
+              .select()
+            
+            data = result.data
+            error = result.error
+          } else {
+            // 新規データを挿入
+            const result = await supabase
+              .from('sales_data')
+              .insert({
+                store_id: targetStoreId,
+                date: dateString,
+                sales_amount: salesAmount,
+                customer_count: customerCount,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .select()
+            
+            data = result.data
+            error = result.error
+          }
 
           if (error) {
             errors.push(`行${i + 1}: データベースエラー - ${error.message}`)

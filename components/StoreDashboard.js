@@ -22,12 +22,19 @@ export default function StoreDashboard({ user }) {
 
   const fetchMonthlySalesData = async () => {
     try {
-      const response = await fetch(`/api/sales?year=${currentYear}&month=${currentMonth}&store_id=${user.store_id}`)
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/sales?year=${currentYear}&month=${currentMonth}&store_id=${user.store_id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         const salesByDate = {}
         data.forEach(item => {
-          const day = new Date(item.date).getDate()
+          // 日付の解析を修正してタイムゾーンの問題を解決
+          const date = new Date(item.date + 'T00:00:00')
+          const day = date.getDate()
           salesByDate[day] = {
             sales_amount: item.sales_amount,
             customer_count: item.customer_count
@@ -90,8 +97,10 @@ export default function StoreDashboard({ user }) {
       Object.keys(salesData).forEach(day => {
         const dayData = salesData[day]
         if (dayData.sales_amount > 0 || dayData.customer_count > 0) {
+          // 日付を正確に作成するために、年月日を直接文字列で作成
+          const dateString = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
           updates.push({
-            date: new Date(currentYear, currentMonth - 1, day).toISOString().split('T')[0],
+            date: dateString,
             sales_amount: dayData.sales_amount || 0,
             customer_count: dayData.customer_count || 0,
             store_id: user.store_id

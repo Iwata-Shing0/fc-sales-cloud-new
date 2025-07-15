@@ -15,6 +15,9 @@ export default function AdminDashboard({ user }) {
   const [loadingRanking, setLoadingRanking] = useState(false)
   const [csvLoading, setCsvLoading] = useState(false)
   const [selectedStore, setSelectedStore] = useState('')
+  const [selectedStoreData, setSelectedStoreData] = useState(null)
+  const [showStoreDetail, setShowStoreDetail] = useState(false)
+  const [storeDetailLoading, setStoreDetailLoading] = useState(false)
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -184,6 +187,34 @@ export default function AdminDashboard({ user }) {
     }
   }
 
+  const fetchStoreDetail = async (storeId) => {
+    setStoreDetailLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const currentYear = new Date().getFullYear()
+      
+      const response = await fetch(`/api/sales/monthly-summary?year=${currentYear}&store_id=${storeId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setSelectedStoreData({
+          storeId,
+          storeName: stores.find(s => s.id === storeId)?.name || '',
+          ...data
+        })
+        setShowStoreDetail(true)
+      } else {
+        setMessage('店舗データの取得に失敗しました')
+      }
+    } catch (error) {
+      setMessage('店舗データ取得中にエラーが発生しました')
+    } finally {
+      setStoreDetailLoading(false)
+    }
+  }
+
   return (
     <div className="container">
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
@@ -235,7 +266,18 @@ export default function AdminDashboard({ user }) {
               {stores.map(store => (
                 <tr key={store.id}>
                   <td>{store.id}</td>
-                  <td>{store.name}</td>
+                  <td>
+                    <span 
+                      onClick={() => fetchStoreDetail(store.id)}
+                      style={{ 
+                        cursor: 'pointer', 
+                        textDecoration: 'underline',
+                        color: '#007bff'
+                      }}
+                    >
+                      {store.name}
+                    </span>
+                  </td>
                   <td>{store.store_code}</td>
                   <td>{new Date(store.created_at).toLocaleDateString('ja-JP')}</td>
                 </tr>
@@ -472,6 +514,145 @@ export default function AdminDashboard({ user }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showStoreDetail && selectedStoreData && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '8px',
+            padding: '20px',
+            width: '90%',
+            maxWidth: '800px',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2>{selectedStoreData.storeName} - 売上データ（{selectedStoreData.year}年）</h2>
+              <button 
+                style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}
+                onClick={() => setShowStoreDetail(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            {storeDetailLoading ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>読み込み中...</div>
+            ) : (
+              <>
+                {/* 年間サマリー */}
+                <div style={{ 
+                  backgroundColor: '#e9ecef', 
+                  padding: '15px', 
+                  borderRadius: '5px', 
+                  marginBottom: '20px' 
+                }}>
+                  <h3 style={{ margin: '0 0 15px 0', fontSize: '16px' }}>年間サマリー</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '12px', color: '#666' }}>年間売上</div>
+                      <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                        {formatCurrency(selectedStoreData.yearSummary.totalSales)}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '12px', color: '#666' }}>年間目標</div>
+                      <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                        {formatCurrency(selectedStoreData.yearSummary.totalTarget)}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '12px', color: '#666' }}>達成率</div>
+                      <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                        {selectedStoreData.yearSummary.achievementRate}%
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '12px', color: '#666' }}>前年比</div>
+                      <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                        {selectedStoreData.yearSummary.growthRate > 0 ? '+' : ''}{selectedStoreData.yearSummary.growthRate}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 月別詳細テーブル */}
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ 
+                    width: '100%', 
+                    borderCollapse: 'collapse', 
+                    fontSize: '12px'
+                  }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f8f9fa' }}>
+                        <th style={{ padding: '8px 4px', border: '1px solid #dee2e6', textAlign: 'center' }}>月</th>
+                        <th style={{ padding: '8px 4px', border: '1px solid #dee2e6', textAlign: 'center' }}>実績</th>
+                        <th style={{ padding: '8px 4px', border: '1px solid #dee2e6', textAlign: 'center' }}>目標</th>
+                        <th style={{ padding: '8px 4px', border: '1px solid #dee2e6', textAlign: 'center' }}>達成率</th>
+                        <th style={{ padding: '8px 4px', border: '1px solid #dee2e6', textAlign: 'center' }}>前年実績</th>
+                        <th style={{ padding: '8px 4px', border: '1px solid #dee2e6', textAlign: 'center' }}>前年比</th>
+                        <th style={{ padding: '8px 4px', border: '1px solid #dee2e6', textAlign: 'center' }}>客数</th>
+                        <th style={{ padding: '8px 4px', border: '1px solid #dee2e6', textAlign: 'center' }}>客単価</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedStoreData.monthlyData.map((data, index) => (
+                        <tr key={index}>
+                          <td style={{ padding: '6px 4px', border: '1px solid #dee2e6', textAlign: 'center', fontWeight: 'bold' }}>
+                            {data.month}月
+                          </td>
+                          <td style={{ padding: '6px 4px', border: '1px solid #dee2e6', textAlign: 'right' }}>
+                            ¥{data.sales.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '6px 4px', border: '1px solid #dee2e6', textAlign: 'right' }}>
+                            ¥{data.target.toLocaleString()}
+                          </td>
+                          <td style={{ 
+                            padding: '6px 4px', 
+                            border: '1px solid #dee2e6', 
+                            textAlign: 'center',
+                            fontWeight: 'bold'
+                          }}>
+                            {data.achievementRate}%
+                          </td>
+                          <td style={{ padding: '6px 4px', border: '1px solid #dee2e6', textAlign: 'right' }}>
+                            ¥{data.previousYearSales.toLocaleString()}
+                          </td>
+                          <td style={{ 
+                            padding: '6px 4px', 
+                            border: '1px solid #dee2e6', 
+                            textAlign: 'center',
+                            fontWeight: 'bold'
+                          }}>
+                            {data.growthRate > 0 ? '+' : ''}{data.growthRate}%
+                          </td>
+                          <td style={{ padding: '6px 4px', border: '1px solid #dee2e6', textAlign: 'right' }}>
+                            {data.customers.toLocaleString()}人
+                          </td>
+                          <td style={{ padding: '6px 4px', border: '1px solid #dee2e6', textAlign: 'right' }}>
+                            ¥{data.avgCustomerPrice.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
