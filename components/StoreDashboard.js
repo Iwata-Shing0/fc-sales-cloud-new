@@ -148,14 +148,41 @@ export default function StoreDashboard({ user }) {
     setMessage('')
 
     try {
-      const text = await file.text()
-      const rows = text.split('\n').map(row => row.split(','))
+      console.log('ファイル名:', file.name)
+      console.log('ファイルサイズ:', file.size)
+      console.log('ファイルタイプ:', file.type)
       
-      // ヘッダー行をスキップ
-      const dataRows = rows.slice(1).filter(row => row.length >= 3 && row[0].trim())
+      const text = await file.text()
+      console.log('ファイル内容（最初の500文字）:', text.substring(0, 500))
+      
+      // BOMを除去
+      const cleanText = text.replace(/^\uFEFF/, '')
+      
+      // 改行で分割（Windows/Mac/Unix形式に対応）
+      const lines = cleanText.split(/\r?\n/)
+      console.log('行数:', lines.length)
+      
+      // 各行をカンマで分割
+      const rows = lines.map(line => {
+        // カンマで分割し、前後の空白とクォートを除去
+        return line.split(',').map(cell => cell.trim().replace(/^["']|["']$/g, ''))
+      })
+      
+      console.log('パース後の最初の5行:', rows.slice(0, 5))
+      
+      // ヘッダー行をスキップし、有効なデータのみフィルタ
+      const dataRows = rows.slice(1).filter(row => {
+        return row.length >= 3 && 
+               row[0] && row[0].trim() !== '' && 
+               row[1] && row[1].trim() !== '' && 
+               row[2] && row[2].trim() !== ''
+      })
+      
+      console.log('有効なデータ行数:', dataRows.length)
+      console.log('有効なデータ（最初の3行）:', dataRows.slice(0, 3))
 
       if (dataRows.length === 0) {
-        setMessage('有効なデータが見つかりません')
+        setMessage('有効なデータが見つかりません。CSV形式を確認してください。\n形式: 日付,税込売上,客数')
         setCsvLoading(false)
         return
       }
@@ -176,13 +203,14 @@ export default function StoreDashboard({ user }) {
       const result = await response.json()
       
       if (response.ok) {
-        setMessage(`CSVアップロード完了: ${result.success}件成功, ${result.errors}件エラー`)
+        setMessage(`CSVアップロード完了: ${result.success}件成功, ${result.errors}件エラー${result.errorDetails && result.errorDetails.length > 0 ? '\n\nエラー詳細:\n' + result.errorDetails.slice(0, 5).join('\n') : ''}`)
         fetchMonthlySalesData()
       } else {
         setMessage(`エラー: ${result.error}`)
       }
     } catch (error) {
-      setMessage('CSVファイルの処理中にエラーが発生しました')
+      console.error('CSV処理エラー:', error)
+      setMessage(`CSVファイルの処理中にエラーが発生しました: ${error.message}`)
     } finally {
       setCsvLoading(false)
       if (fileInputRef.current) {
@@ -374,6 +402,7 @@ export default function StoreDashboard({ user }) {
               fontSize: '11px',
               fontWeight: 'bold'
             }}
+            title="CSV形式: 日付,税込売上,客数"
           >
             {csvLoading ? 'アップロード中...' : 'CSV取込'}
           </button>
