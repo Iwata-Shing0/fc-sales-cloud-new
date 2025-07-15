@@ -48,7 +48,7 @@ export default function Login({ onLogin }) {
       <div style={{ maxWidth: '400px', margin: '100px auto' }}>
         <div className="card">
           <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>
-            FC売上管理システム
+            LM売上管理
           </h2>
           
           {error && (

@@ -139,219 +139,312 @@ export default function StoreDashboard({ user }) {
   const monthlyTotals = getMonthlyTotals()
 
   return (
-    <div className="container">
-      <h2 style={{ marginBottom: '20px' }}>
-        {user.store_name} - 月次売上管理
-      </h2>
+    <div className="container" style={{ padding: '10px' }}>
+      {/* 固定ヘッダー */}
+      <div style={{ 
+        position: 'sticky', 
+        top: 0, 
+        backgroundColor: '#f8f9fa', 
+        zIndex: 100, 
+        padding: '10px',
+        borderRadius: '5px',
+        marginBottom: '10px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+      }}>
+        <h2 style={{ margin: '0 0 10px 0', fontSize: '18px', textAlign: 'center' }}>
+          {user.store_name} - LM売上管理
+        </h2>
+        
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+          <button 
+            onClick={() => changeMonth(-1)}
+            style={{
+              backgroundColor: '#6c757d',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '3px',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            ← 前月
+          </button>
+          
+          <h3 style={{ margin: 0, fontSize: '16px' }}>
+            {currentYear}年{currentMonth}月
+          </h3>
+          
+          <button 
+            onClick={() => changeMonth(1)}
+            style={{
+              backgroundColor: '#6c757d',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '3px',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            次月 →
+          </button>
+        </div>
 
-      <div className="card">
-        {/* 固定ヘッダー */}
-        <div style={{ 
-          position: 'sticky', 
-          top: 0, 
-          backgroundColor: '#ffffff', 
-          zIndex: 10, 
-          padding: '15px 0',
-          borderBottom: '2px solid #dee2e6'
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+          <button
+            onClick={handleUpdateMonth}
+            disabled={loading}
+            style={{
+              backgroundColor: loading ? '#ccc' : '#007bff',
+              color: 'white',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '3px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }}
+          >
+            {loading ? '更新中...' : '更新'}
+          </button>
+
+          <button
+            onClick={() => window.open('https://lm-order.com', '_blank')}
+            style={{
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '3px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }}
+          >
+            LUIDA注文
+          </button>
+        </div>
+
+        {message && (
+          <div style={{
+            marginTop: '10px',
+            padding: '8px',
+            backgroundColor: message.includes('エラー') ? '#f8d7da' : '#d4edda',
+            border: `1px solid ${message.includes('エラー') ? '#f5c6cb' : '#c3e6cb'}`,
+            borderRadius: '3px',
+            color: message.includes('エラー') ? '#721c24' : '#155724',
+            textAlign: 'center',
+            fontSize: '12px'
+          }}>
+            {message}
+          </div>
+        )}
+      </div>
+
+      <div style={{ overflowX: 'auto', marginBottom: '10px' }}>
+        <table style={{ 
+          width: '100%', 
+          borderCollapse: 'collapse', 
+          minWidth: '320px',
+          fontSize: '12px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
-            <button 
-              onClick={() => changeMonth(-1)}
-              style={{
-                backgroundColor: '#6c757d',
-                color: 'white',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '5px',
-                cursor: 'pointer'
-              }}
-            >
-              ← 前月
-            </button>
-            
-            <h3 style={{ margin: 0 }}>
-              {currentYear}年{currentMonth}月
-            </h3>
-            
-            <button 
-              onClick={() => changeMonth(1)}
-              style={{
-                backgroundColor: '#6c757d',
-                color: 'white',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '5px',
-                cursor: 'pointer'
-              }}
-            >
-              次月 →
-            </button>
-          </div>
-
-          {/* ヘッダーボタン */}
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-            <button
-              onClick={handleUpdateMonth}
-              disabled={loading}
-              style={{
-                backgroundColor: loading ? '#ccc' : '#007bff',
-                color: 'white',
-                border: 'none',
-                padding: '10px 25px',
-                borderRadius: '5px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}
-            >
-              {loading ? '更新中...' : '更新'}
-            </button>
-
-            <button
-              onClick={() => window.open('https://lm-order.com', '_blank')}
-              style={{
-                backgroundColor: '#28a745',
-                color: 'white',
-                border: 'none',
-                padding: '10px 25px',
-                borderRadius: '5px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}
-            >
-              LUIDA注文
-            </button>
-          </div>
-
-          {message && (
-            <div style={{
-              marginTop: '15px',
-              padding: '10px',
-              backgroundColor: message.includes('エラー') ? '#f8d7da' : '#d4edda',
-              border: `1px solid ${message.includes('エラー') ? '#f5c6cb' : '#c3e6cb'}`,
-              borderRadius: '5px',
-              color: message.includes('エラー') ? '#721c24' : '#155724',
-              textAlign: 'center'
-            }}>
-              {message}
-            </div>
-          )}
-        </div>
-
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
-            <thead style={{ position: 'sticky', top: '120px', zIndex: 5 }}>
-              <tr style={{ backgroundColor: '#f8f9fa' }}>
-                <th style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center', width: '100px' }}>日付</th>
-                <th style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center', width: '120px' }}>売上（税込）</th>
-                <th style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center', width: '80px' }}>客数</th>
-                <th style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center', width: '120px' }}>売上（税抜）</th>
-                <th style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center', width: '120px' }}>平均客単価</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
-                const dayData = salesData[day] || { sales_amount: 0, customer_count: 0 }
-                const exTaxAmount = calculateExTax(dayData.sales_amount)
-                const avgPrice = calculateAvgCustomerPrice(dayData.sales_amount, dayData.customer_count)
-                const { name: dayName, dayOfWeek } = getDayOfWeek(day)
-                const dayColor = getDayColor(dayOfWeek)
-                
-                return (
-                  <tr key={day}>
-                    <td style={{ 
-                      padding: '8px', 
-                      border: '1px solid #dee2e6', 
-                      textAlign: 'center',
-                      fontWeight: 'bold',
-                      color: dayColor,
-                      width: '100px'
-                    }}>
-                      {day}({dayName})
-                    </td>
-                    <td style={{ padding: '5px', border: '1px solid #dee2e6', width: '120px' }}>
-                      <input
-                        type="number"
-                        value={dayData.sales_amount || ''}
-                        onChange={(e) => handleInputChange(day, 'sales_amount', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '6px',
-                          border: '1px solid #ccc',
-                          borderRadius: '3px',
-                          textAlign: 'right'
-                        }}
-                        placeholder="0"
-                        min="0"
-                      />
-                    </td>
-                    <td style={{ padding: '5px', border: '1px solid #dee2e6', width: '80px' }}>
-                      <input
-                        type="number"
-                        value={dayData.customer_count || ''}
-                        onChange={(e) => handleInputChange(day, 'customer_count', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '6px',
-                          border: '1px solid #ccc',
-                          borderRadius: '3px',
-                          textAlign: 'right'
-                        }}
-                        placeholder="0"
-                        min="0"
-                      />
-                    </td>
-                    <td style={{ 
-                      padding: '8px', 
-                      border: '1px solid #dee2e6', 
-                      textAlign: 'right',
-                      backgroundColor: '#f8f9fa',
-                      width: '120px'
-                    }}>
-                      {exTaxAmount > 0 ? `¥${exTaxAmount.toLocaleString()}` : ''}
-                    </td>
-                    <td style={{ 
-                      padding: '8px', 
-                      border: '1px solid #dee2e6', 
-                      textAlign: 'right',
-                      backgroundColor: '#f8f9fa',
-                      width: '120px'
-                    }}>
-                      {avgPrice > 0 ? `¥${avgPrice.toLocaleString()}` : ''}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-            <tfoot>
-              <tr style={{ backgroundColor: '#e9ecef', fontWeight: 'bold' }}>
-                <td style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center' }}>
-                  月計
-                </td>
-                <td style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'right' }}>
-                  ¥{monthlyTotals.totalSales.toLocaleString()}
-                </td>
-                <td style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'right' }}>
-                  {monthlyTotals.totalCustomers}人
-                </td>
-                <td style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'right' }}>
-                  ¥{monthlyTotals.totalExTaxSales.toLocaleString()}
-                </td>
-                <td style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'right' }}>
-                  ¥{monthlyTotals.avgCustomerPrice.toLocaleString()}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+          <thead>
+            <tr style={{ backgroundColor: '#f8f9fa' }}>
+              <th style={{ 
+                padding: '8px 4px', 
+                border: '1px solid #dee2e6', 
+                textAlign: 'center', 
+                width: '50px',
+                fontSize: '11px'
+              }}>
+                日付
+              </th>
+              <th style={{ 
+                padding: '8px 4px', 
+                border: '1px solid #dee2e6', 
+                textAlign: 'center', 
+                width: '70px',
+                fontSize: '11px'
+              }}>
+                売上(税込)
+              </th>
+              <th style={{ 
+                padding: '8px 4px', 
+                border: '1px solid #dee2e6', 
+                textAlign: 'center', 
+                width: '50px',
+                fontSize: '11px'
+              }}>
+                客数
+              </th>
+              <th style={{ 
+                padding: '8px 4px', 
+                border: '1px solid #dee2e6', 
+                textAlign: 'center', 
+                width: '70px',
+                fontSize: '11px'
+              }}>
+                売上(税抜)
+              </th>
+              <th style={{ 
+                padding: '8px 4px', 
+                border: '1px solid #dee2e6', 
+                textAlign: 'center', 
+                width: '70px',
+                fontSize: '11px'
+              }}>
+                平均客単価
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
+              const dayData = salesData[day] || { sales_amount: 0, customer_count: 0 }
+              const exTaxAmount = calculateExTax(dayData.sales_amount)
+              const avgPrice = calculateAvgCustomerPrice(dayData.sales_amount, dayData.customer_count)
+              const { name: dayName, dayOfWeek } = getDayOfWeek(day)
+              const dayColor = getDayColor(dayOfWeek)
+              
+              return (
+                <tr key={day}>
+                  <td style={{ 
+                    padding: '6px 2px', 
+                    border: '1px solid #dee2e6', 
+                    textAlign: 'center',
+                    fontWeight: 'bold',
+                    color: dayColor,
+                    width: '50px',
+                    fontSize: '11px'
+                  }}>
+                    {day}({dayName})
+                  </td>
+                  <td style={{ 
+                    padding: '3px', 
+                    border: '1px solid #dee2e6', 
+                    width: '70px'
+                  }}>
+                    <input
+                      type="number"
+                      value={dayData.sales_amount || ''}
+                      onChange={(e) => handleInputChange(day, 'sales_amount', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '4px',
+                        border: '1px solid #ccc',
+                        borderRadius: '2px',
+                        textAlign: 'right',
+                        fontSize: '11px'
+                      }}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </td>
+                  <td style={{ 
+                    padding: '3px', 
+                    border: '1px solid #dee2e6', 
+                    width: '50px'
+                  }}>
+                    <input
+                      type="number"
+                      value={dayData.customer_count || ''}
+                      onChange={(e) => handleInputChange(day, 'customer_count', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '4px',
+                        border: '1px solid #ccc',
+                        borderRadius: '2px',
+                        textAlign: 'right',
+                        fontSize: '11px'
+                      }}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </td>
+                  <td style={{ 
+                    padding: '6px 4px', 
+                    border: '1px solid #dee2e6', 
+                    textAlign: 'right',
+                    backgroundColor: '#f8f9fa',
+                    width: '70px',
+                    fontSize: '11px'
+                  }}>
+                    {exTaxAmount > 0 ? `¥${exTaxAmount.toLocaleString()}` : ''}
+                  </td>
+                  <td style={{ 
+                    padding: '6px 4px', 
+                    border: '1px solid #dee2e6', 
+                    textAlign: 'right',
+                    backgroundColor: '#f8f9fa',
+                    width: '70px',
+                    fontSize: '11px'
+                  }}>
+                    {avgPrice > 0 ? `¥${avgPrice.toLocaleString()}` : ''}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+          <tfoot>
+            <tr style={{ backgroundColor: '#e9ecef', fontWeight: 'bold' }}>
+              <td style={{ 
+                padding: '8px 4px', 
+                border: '1px solid #dee2e6', 
+                textAlign: 'center',
+                fontSize: '11px'
+              }}>
+                月計
+              </td>
+              <td style={{ 
+                padding: '8px 4px', 
+                border: '1px solid #dee2e6', 
+                textAlign: 'right',
+                fontSize: '11px'
+              }}>
+                ¥{monthlyTotals.totalSales.toLocaleString()}
+              </td>
+              <td style={{ 
+                padding: '8px 4px', 
+                border: '1px solid #dee2e6', 
+                textAlign: 'right',
+                fontSize: '11px'
+              }}>
+                {monthlyTotals.totalCustomers}人
+              </td>
+              <td style={{ 
+                padding: '8px 4px', 
+                border: '1px solid #dee2e6', 
+                textAlign: 'right',
+                fontSize: '11px'
+              }}>
+                ¥{monthlyTotals.totalExTaxSales.toLocaleString()}
+              </td>
+              <td style={{ 
+                padding: '8px 4px', 
+                border: '1px solid #dee2e6', 
+                textAlign: 'right',
+                fontSize: '11px'
+              }}>
+                ¥{monthlyTotals.avgCustomerPrice.toLocaleString()}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
       
-      <div className="card" style={{ marginTop: '20px' }}>
-        <h4>現在のユーザー情報</h4>
-        <p><strong>店舗名:</strong> {user.store_name}</p>
-        <p><strong>ユーザー名:</strong> {user.username}</p>
-        <p><strong>権限:</strong> 店舗ユーザー</p>
+      <div style={{ 
+        backgroundColor: '#f8f9fa', 
+        padding: '10px', 
+        borderRadius: '5px',
+        marginTop: '10px'
+      }}>
+        <h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>ユーザー情報</h4>
+        <p style={{ margin: '4px 0', fontSize: '12px' }}>
+          <strong>店舗:</strong> {user.store_name}
+        </p>
+        <p style={{ margin: '4px 0', fontSize: '12px' }}>
+          <strong>ユーザー:</strong> {user.username}
+        </p>
       </div>
     </div>
   )
