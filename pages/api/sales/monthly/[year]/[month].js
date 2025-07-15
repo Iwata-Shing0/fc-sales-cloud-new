@@ -23,15 +23,46 @@ export default async function handler(req, res) {
     try {
       if (req.method === 'GET') {
         const { year, month } = req.query
-        let salesData
 
-        if (req.user.role === 'admin') {
-          salesData = await SalesData.findByMonth(parseInt(year), parseInt(month))
-        } else {
-          salesData = await SalesData.findByStoreAndMonth(req.user.store_id, parseInt(year), parseInt(month))
+        if (req.user.role !== 'admin') {
+          return res.status(403).json({ message: 'アクセス権限がありません' })
         }
 
-        res.json(salesData)
+        try {
+          const salesData = await SalesData.getMonthlyTotalByStore(parseInt(year), parseInt(month))
+          res.json(salesData)
+        } catch (error) {
+          console.log('Database function not found, using direct query:', error.message)
+          // 関数が存在しない場合は直接クエリ
+          const salesData = await SalesData.findByMonth(parseInt(year), parseInt(month))
+          
+          // 店舗別に集計
+          const storeMap = {}
+          salesData.forEach(item => {
+            if (!storeMap[item.store_id]) {
+              storeMap[item.store_id] = {
+                store_id: item.store_id,
+                store_name: item.stores?.name || 'Unknown',
+                total_sales: 0,
+                total_customers: 0,
+                days_count: 0
+              }
+            }
+            storeMap[item.store_id].total_sales += item.sales_amount
+            storeMap[item.store_id].total_customers += item.customer_count
+            if (item.sales_amount > 0) {
+              storeMap[item.store_id].days_count += 1
+            }
+          })
+
+          // 配列に変換して売上順にソート
+          const result = Object.values(storeMap).map(store => ({
+            ...store,
+            avg_daily_sales: store.days_count > 0 ? store.total_sales / store.days_count : 0
+          })).sort((a, b) => b.total_sales - a.total_sales)
+
+          res.json(result)
+        }
       } else {
         res.status(405).json({ message: 'Method not allowed' })
       }

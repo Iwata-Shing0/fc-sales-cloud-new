@@ -119,13 +119,41 @@ export default function AdminDashboard({ user }) {
     setMessage('')
 
     try {
-      const text = await file.text()
-      const rows = text.split('\n').map(row => row.split(','))
+      console.log('ファイル名:', file.name)
+      console.log('ファイルサイズ:', file.size)
+      console.log('ファイルタイプ:', file.type)
       
-      const dataRows = rows.slice(1).filter(row => row.length >= 3 && row[0].trim())
+      const text = await file.text()
+      console.log('ファイル内容（最初の500文字）:', text.substring(0, 500))
+      
+      // BOMを除去
+      const cleanText = text.replace(/^\uFEFF/, '')
+      
+      // 改行で分割（Windows/Mac/Unix形式に対応）
+      const lines = cleanText.split(/\r?\n/)
+      console.log('行数:', lines.length)
+      
+      // 各行をカンマで分割
+      const rows = lines.map(line => {
+        // カンマで分割し、前後の空白とクォートを除去
+        return line.split(',').map(cell => cell.trim().replace(/^["']|["']$/g, ''))
+      })
+      
+      console.log('パース後の最初の5行:', rows.slice(0, 5))
+      
+      // ヘッダー行をスキップし、有効なデータのみフィルタ
+      const dataRows = rows.slice(1).filter(row => {
+        return row.length >= 3 && 
+               row[0] && row[0].trim() !== '' && 
+               row[1] && row[1].trim() !== '' && 
+               row[2] && row[2].trim() !== ''
+      })
+      
+      console.log('有効なデータ行数:', dataRows.length)
+      console.log('有効なデータ（最初の3行）:', dataRows.slice(0, 3))
 
       if (dataRows.length === 0) {
-        setMessage('有効なデータが見つかりません')
+        setMessage('有効なデータが見つかりません。CSV形式を確認してください。\n形式: 日付,税込売上,客数')
         setCsvLoading(false)
         return
       }
@@ -143,15 +171,27 @@ export default function AdminDashboard({ user }) {
         })
       })
 
-      const result = await response.json()
+      console.log('Response status:', response.status)
+      console.log('Response headers:', response.headers)
+      
+      let result
+      const contentType = response.headers.get('content-type')
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json()
+      } else {
+        const text = await response.text()
+        console.log('Non-JSON response:', text)
+        result = { error: 'サーバーから無効なレスポンスを受信しました' }
+      }
       
       if (response.ok) {
-        setMessage(`CSVアップロード完了: ${result.success}件成功, ${result.errors}件エラー`)
+        setMessage(`CSVアップロード完了: ${result.success}件成功, ${result.errors}件エラー${result.errorDetails && result.errorDetails.length > 0 ? '\n\nエラー詳細:\n' + result.errorDetails.slice(0, 5).join('\n') : ''}`)
       } else {
         setMessage(`エラー: ${result.error}`)
       }
     } catch (error) {
-      setMessage('CSVファイルの処理中にエラーが発生しました')
+      console.error('CSV処理エラー:', error)
+      setMessage(`CSVファイルの処理中にエラーが発生しました: ${error.message}`)
     } finally {
       setCsvLoading(false)
       if (fileInputRef.current) {
@@ -215,6 +255,36 @@ export default function AdminDashboard({ user }) {
     }
   }
 
+  const handleDeleteStore = async (storeId, storeName) => {
+    // 第1段階確認
+    const firstConfirm = window.confirm(`店舗データを削除してよいですか？\n\n店舗名: ${storeName}`)
+    if (!firstConfirm) return
+
+    // 第2段階確認
+    const secondConfirm = window.confirm(`店舗データの復元はできません。本当に良いですか？\n\n店舗名: ${storeName}\n\n※この操作は取り消せません。`)
+    if (!secondConfirm) return
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/stores/${storeId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        setMessage(`店舗「${storeName}」を削除しました`)
+        fetchStores() // 店舗一覧を再取得
+      } else {
+        const result = await response.json()
+        setMessage(`削除に失敗しました: ${result.error}`)
+      }
+    } catch (error) {
+      setMessage('店舗削除中にエラーが発生しました')
+    }
+  }
+
   return (
     <div className="container">
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
@@ -260,6 +330,7 @@ export default function AdminDashboard({ user }) {
                 <th>店舗名</th>
                 <th>店舗コード</th>
                 <th>作成日</th>
+                <th>操作</th>
               </tr>
             </thead>
             <tbody>
@@ -280,6 +351,23 @@ export default function AdminDashboard({ user }) {
                   </td>
                   <td>{store.store_code}</td>
                   <td>{new Date(store.created_at).toLocaleDateString('ja-JP')}</td>
+                  <td>
+                    <button
+                      onClick={() => handleDeleteStore(store.id, store.name)}
+                      className="btn btn-danger btn-sm"
+                      style={{ 
+                        fontSize: '12px', 
+                        padding: '4px 8px',
+                        backgroundColor: '#dc3545',
+                        border: 'none',
+                        borderRadius: '3px',
+                        color: 'white',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      削除
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
