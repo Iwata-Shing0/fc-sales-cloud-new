@@ -123,6 +123,19 @@ export default function StoreDashboard({ user }) {
     setCurrentDate(newDate)
   }
 
+  const getDayOfWeek = (day) => {
+    const date = new Date(currentYear, currentMonth - 1, day)
+    const dayOfWeek = date.getDay()
+    const dayNames = ['日', '月', '火', '水', '木', '金', '土']
+    return { name: dayNames[dayOfWeek], dayOfWeek }
+  }
+
+  const getDayColor = (dayOfWeek) => {
+    if (dayOfWeek === 0) return '#ff0000' // 日曜日：赤
+    if (dayOfWeek === 6) return '#0000ff' // 土曜日：青
+    return '#000000' // 平日：黒
+  }
+
   const monthlyTotals = getMonthlyTotals()
 
   return (
@@ -132,49 +145,109 @@ export default function StoreDashboard({ user }) {
       </h2>
 
       <div className="card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-          <button 
-            onClick={() => changeMonth(-1)}
-            style={{
-              backgroundColor: '#6c757d',
-              color: 'white',
-              border: 'none',
-              padding: '8px 16px',
+        {/* 固定ヘッダー */}
+        <div style={{ 
+          position: 'sticky', 
+          top: 0, 
+          backgroundColor: '#ffffff', 
+          zIndex: 10, 
+          padding: '15px 0',
+          borderBottom: '2px solid #dee2e6'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
+            <button 
+              onClick={() => changeMonth(-1)}
+              style={{
+                backgroundColor: '#6c757d',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '5px',
+                cursor: 'pointer'
+              }}
+            >
+              ← 前月
+            </button>
+            
+            <h3 style={{ margin: 0 }}>
+              {currentYear}年{currentMonth}月
+            </h3>
+            
+            <button 
+              onClick={() => changeMonth(1)}
+              style={{
+                backgroundColor: '#6c757d',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '5px',
+                cursor: 'pointer'
+              }}
+            >
+              次月 →
+            </button>
+          </div>
+
+          {/* ヘッダーボタン */}
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <button
+              onClick={handleUpdateMonth}
+              disabled={loading}
+              style={{
+                backgroundColor: loading ? '#ccc' : '#007bff',
+                color: 'white',
+                border: 'none',
+                padding: '10px 25px',
+                borderRadius: '5px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}
+            >
+              {loading ? '更新中...' : '更新'}
+            </button>
+
+            <button
+              onClick={() => window.open('https://lm-order.com', '_blank')}
+              style={{
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                padding: '10px 25px',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}
+            >
+              LUIDA注文
+            </button>
+          </div>
+
+          {message && (
+            <div style={{
+              marginTop: '15px',
+              padding: '10px',
+              backgroundColor: message.includes('エラー') ? '#f8d7da' : '#d4edda',
+              border: `1px solid ${message.includes('エラー') ? '#f5c6cb' : '#c3e6cb'}`,
               borderRadius: '5px',
-              cursor: 'pointer'
-            }}
-          >
-            ← 前月
-          </button>
-          
-          <h3 style={{ margin: 0 }}>
-            {currentYear}年{currentMonth}月
-          </h3>
-          
-          <button 
-            onClick={() => changeMonth(1)}
-            style={{
-              backgroundColor: '#6c757d',
-              color: 'white',
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '5px',
-              cursor: 'pointer'
-            }}
-          >
-            次月 →
-          </button>
+              color: message.includes('エラー') ? '#721c24' : '#155724',
+              textAlign: 'center'
+            }}>
+              {message}
+            </div>
+          )}
         </div>
 
-        <div style={{ overflowX: 'auto', marginBottom: '20px' }}>
+        <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
-            <thead>
+            <thead style={{ position: 'sticky', top: '120px', zIndex: 5 }}>
               <tr style={{ backgroundColor: '#f8f9fa' }}>
-                <th style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center' }}>日</th>
-                <th style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center' }}>売上（税込）</th>
-                <th style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center' }}>客数</th>
-                <th style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center' }}>売上（税抜）</th>
-                <th style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center' }}>平均客単価</th>
+                <th style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center', width: '100px' }}>日付</th>
+                <th style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center', width: '120px' }}>売上（税込）</th>
+                <th style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center', width: '80px' }}>客数</th>
+                <th style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center', width: '120px' }}>売上（税抜）</th>
+                <th style={{ padding: '10px', border: '1px solid #dee2e6', textAlign: 'center', width: '120px' }}>平均客単価</th>
               </tr>
             </thead>
             <tbody>
@@ -182,6 +255,8 @@ export default function StoreDashboard({ user }) {
                 const dayData = salesData[day] || { sales_amount: 0, customer_count: 0 }
                 const exTaxAmount = calculateExTax(dayData.sales_amount)
                 const avgPrice = calculateAvgCustomerPrice(dayData.sales_amount, dayData.customer_count)
+                const { name: dayName, dayOfWeek } = getDayOfWeek(day)
+                const dayColor = getDayColor(dayOfWeek)
                 
                 return (
                   <tr key={day}>
@@ -189,11 +264,13 @@ export default function StoreDashboard({ user }) {
                       padding: '8px', 
                       border: '1px solid #dee2e6', 
                       textAlign: 'center',
-                      fontWeight: 'bold'
+                      fontWeight: 'bold',
+                      color: dayColor,
+                      width: '100px'
                     }}>
-                      {day}
+                      {day}({dayName})
                     </td>
-                    <td style={{ padding: '5px', border: '1px solid #dee2e6' }}>
+                    <td style={{ padding: '5px', border: '1px solid #dee2e6', width: '120px' }}>
                       <input
                         type="number"
                         value={dayData.sales_amount || ''}
@@ -209,7 +286,7 @@ export default function StoreDashboard({ user }) {
                         min="0"
                       />
                     </td>
-                    <td style={{ padding: '5px', border: '1px solid #dee2e6' }}>
+                    <td style={{ padding: '5px', border: '1px solid #dee2e6', width: '80px' }}>
                       <input
                         type="number"
                         value={dayData.customer_count || ''}
@@ -229,7 +306,8 @@ export default function StoreDashboard({ user }) {
                       padding: '8px', 
                       border: '1px solid #dee2e6', 
                       textAlign: 'right',
-                      backgroundColor: '#f8f9fa'
+                      backgroundColor: '#f8f9fa',
+                      width: '120px'
                     }}>
                       {exTaxAmount > 0 ? `¥${exTaxAmount.toLocaleString()}` : ''}
                     </td>
@@ -237,7 +315,8 @@ export default function StoreDashboard({ user }) {
                       padding: '8px', 
                       border: '1px solid #dee2e6', 
                       textAlign: 'right',
-                      backgroundColor: '#f8f9fa'
+                      backgroundColor: '#f8f9fa',
+                      width: '120px'
                     }}>
                       {avgPrice > 0 ? `¥${avgPrice.toLocaleString()}` : ''}
                     </td>
@@ -266,39 +345,6 @@ export default function StoreDashboard({ user }) {
             </tfoot>
           </table>
         </div>
-
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <button
-            onClick={handleUpdateMonth}
-            disabled={loading}
-            style={{
-              backgroundColor: loading ? '#ccc' : '#007bff',
-              color: 'white',
-              border: 'none',
-              padding: '12px 30px',
-              borderRadius: '5px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              fontSize: '16px',
-              fontWeight: 'bold'
-            }}
-          >
-            {loading ? '更新中...' : '更新'}
-          </button>
-        </div>
-
-        {message && (
-          <div style={{
-            marginTop: '15px',
-            padding: '10px',
-            backgroundColor: message.includes('エラー') ? '#f8d7da' : '#d4edda',
-            border: `1px solid ${message.includes('エラー') ? '#f5c6cb' : '#c3e6cb'}`,
-            borderRadius: '5px',
-            color: message.includes('エラー') ? '#721c24' : '#155724',
-            textAlign: 'center'
-          }}>
-            {message}
-          </div>
-        )}
       </div>
       
       <div className="card" style={{ marginTop: '20px' }}>
