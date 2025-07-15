@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import SalesAnalytics from './SalesAnalytics'
 
 export default function StoreDashboard({ user }) {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -6,6 +7,7 @@ export default function StoreDashboard({ user }) {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [csvLoading, setCsvLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState('daily')
   const fileInputRef = useRef(null)
 
   const currentYear = currentDate.getFullYear()
@@ -218,8 +220,55 @@ export default function StoreDashboard({ user }) {
 
   const monthlyTotals = getMonthlyTotals()
 
+  if (activeTab === 'analytics') {
+    return <SalesAnalytics user={user} />
+  }
+
   return (
     <div className="container" style={{ padding: '10px' }}>
+      {/* タブナビゲーション */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '5px', 
+        marginBottom: '10px',
+        backgroundColor: '#f8f9fa',
+        padding: '5px',
+        borderRadius: '5px'
+      }}>
+        <button
+          onClick={() => setActiveTab('daily')}
+          style={{
+            flex: 1,
+            padding: '8px',
+            border: 'none',
+            borderRadius: '3px',
+            backgroundColor: activeTab === 'daily' ? '#007bff' : 'transparent',
+            color: activeTab === 'daily' ? 'white' : '#007bff',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            cursor: 'pointer'
+          }}
+        >
+          日次入力
+        </button>
+        <button
+          onClick={() => setActiveTab('analytics')}
+          style={{
+            flex: 1,
+            padding: '8px',
+            border: 'none',
+            borderRadius: '3px',
+            backgroundColor: activeTab === 'analytics' ? '#007bff' : 'transparent',
+            color: activeTab === 'analytics' ? 'white' : '#007bff',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            cursor: 'pointer'
+          }}
+        >
+          売上分析
+        </button>
+      </div>
+
       {/* 固定ヘッダー */}
       <div style={{ 
         position: 'sticky', 
