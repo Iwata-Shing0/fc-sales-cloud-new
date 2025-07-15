@@ -40,40 +40,94 @@ export default async function handler(req, res) {
 
       const targetYear = year || new Date().getFullYear()
 
-      // 月別売上サマリーを取得
-      const { data: salesData, error: salesError } = await supabase
+      // 月別売上サマリーを取得（関数が存在しない場合は直接クエリ）
+      let salesData
+      const { data: funcData, error: salesError } = await supabase
         .rpc('get_monthly_sales_summary', {
           target_store_id: parseInt(targetStoreId),
           target_year: parseInt(targetYear)
         })
 
       if (salesError) {
-        console.error('Monthly summary error:', salesError)
-        return res.status(500).json({ error: 'データ取得エラー' })
+        console.log('Function not found, using direct query:', salesError.message)
+        // 関数が存在しない場合は直接クエリ
+        const { data: directData, error: directError } = await supabase
+          .from('sales_data')
+          .select('date, sales_amount, customer_count')
+          .eq('store_id', targetStoreId)
+          .gte('date', `${targetYear}-01-01`)
+          .lte('date', `${targetYear}-12-31`)
+
+        if (directError) {
+          console.error('Direct query error:', directError)
+          return res.status(500).json({ error: 'データ取得エラー' })
+        }
+
+        // 月別にグループ化
+        const monthlyMap = {}
+        directData.forEach(item => {
+          const month = new Date(item.date).getMonth() + 1
+          if (!monthlyMap[month]) {
+            monthlyMap[month] = { month, total_sales: 0, total_customers: 0 }
+          }
+          monthlyMap[month].total_sales += item.sales_amount
+          monthlyMap[month].total_customers += item.customer_count
+        })
+        salesData = Object.values(monthlyMap)
+      } else {
+        salesData = funcData
       }
 
-      // 目標売上データを取得
-      const { data: targetData, error: targetError } = await supabase
+      // 目標売上データを取得（テーブルが存在しない場合は空配列）
+      let targetData = []
+      const { data: targetResult, error: targetError } = await supabase
         .from('sales_targets')
         .select('*')
         .eq('store_id', targetStoreId)
         .eq('year', targetYear)
 
       if (targetError) {
-        console.error('Target data error:', targetError)
-        return res.status(500).json({ error: '目標データ取得エラー' })
+        console.log('Target table may not exist:', targetError.message)
+        // テーブルが存在しない場合は空配列を使用
+        targetData = []
+      } else {
+        targetData = targetResult
       }
 
       // 前年同期データを取得
       const previousYear = parseInt(targetYear) - 1
-      const { data: previousYearData, error: previousError } = await supabase
+      let previousYearData = []
+      const { data: prevFuncData, error: previousError } = await supabase
         .rpc('get_monthly_sales_summary', {
           target_store_id: parseInt(targetStoreId),
           target_year: previousYear
         })
 
       if (previousError) {
-        console.error('Previous year data error:', previousError)
+        console.log('Previous year function not found, using direct query:', previousError.message)
+        // 関数が存在しない場合は直接クエリ
+        const { data: prevDirectData, error: prevDirectError } = await supabase
+          .from('sales_data')
+          .select('date, sales_amount, customer_count')
+          .eq('store_id', targetStoreId)
+          .gte('date', `${previousYear}-01-01`)
+          .lte('date', `${previousYear}-12-31`)
+
+        if (!prevDirectError) {
+          // 月別にグループ化
+          const prevMonthlyMap = {}
+          prevDirectData.forEach(item => {
+            const month = new Date(item.date).getMonth() + 1
+            if (!prevMonthlyMap[month]) {
+              prevMonthlyMap[month] = { month, total_sales: 0, total_customers: 0 }
+            }
+            prevMonthlyMap[month].total_sales += item.sales_amount
+            prevMonthlyMap[month].total_customers += item.customer_count
+          })
+          previousYearData = Object.values(prevMonthlyMap)
+        }
+      } else {
+        previousYearData = prevFuncData
       }
 
       // データを月別に整理

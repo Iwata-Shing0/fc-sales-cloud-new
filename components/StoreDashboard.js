@@ -249,7 +249,7 @@ export default function StoreDashboard({ user }) {
   const monthlyTotals = getMonthlyTotals()
 
   if (activeTab === 'analytics') {
-    return <SalesAnalytics user={user} />
+    return <SalesAnalytics user={user} onTabChange={setActiveTab} />
   }
 
   return (

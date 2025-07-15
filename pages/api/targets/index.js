@@ -42,6 +42,24 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: '目標金額は0以上である必要があります' })
         }
 
+        // sales_targetsテーブルを作成（存在しない場合）
+        try {
+          await supabase.sql`
+            CREATE TABLE IF NOT EXISTS sales_targets (
+              id SERIAL PRIMARY KEY,
+              store_id INTEGER NOT NULL,
+              year INTEGER NOT NULL,
+              month INTEGER NOT NULL CHECK (month >= 1 AND month <= 12),
+              target_amount INTEGER NOT NULL DEFAULT 0,
+              created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+              updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+              UNIQUE(store_id, year, month)
+            )
+          `
+        } catch (createError) {
+          console.log('Table creation attempt:', createError.message)
+        }
+
         const { data, error } = await supabase
           .from('sales_targets')
           .upsert({

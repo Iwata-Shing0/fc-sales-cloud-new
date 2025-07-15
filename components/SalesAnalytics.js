@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export default function SalesAnalytics({ user }) {
+export default function SalesAnalytics({ user, onTabChange }) {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
   const [monthlyData, setMonthlyData] = useState([])
   const [yearSummary, setYearSummary] = useState({})
@@ -86,6 +86,48 @@ export default function SalesAnalytics({ user }) {
 
   return (
     <div className="container" style={{ padding: '10px' }}>
+      {/* タブナビゲーション */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '5px', 
+        marginBottom: '10px',
+        backgroundColor: '#f8f9fa',
+        padding: '5px',
+        borderRadius: '5px'
+      }}>
+        <button
+          onClick={() => onTabChange('daily')}
+          style={{
+            flex: 1,
+            padding: '8px',
+            border: 'none',
+            borderRadius: '3px',
+            backgroundColor: 'transparent',
+            color: '#007bff',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            cursor: 'pointer'
+          }}
+        >
+          日次入力
+        </button>
+        <button
+          style={{
+            flex: 1,
+            padding: '8px',
+            border: 'none',
+            borderRadius: '3px',
+            backgroundColor: '#007bff',
+            color: 'white',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            cursor: 'pointer'
+          }}
+        >
+          売上分析
+        </button>
+      </div>
+
       {/* ヘッダー */}
       <div style={{ 
         backgroundColor: '#f8f9fa', 
