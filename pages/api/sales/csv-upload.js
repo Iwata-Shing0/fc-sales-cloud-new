@@ -122,6 +122,9 @@ export default async function handler(req, res) {
               sales_amount: salesAmount,
               customer_count: customerCount,
               updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'store_id,date',
+              ignoreDuplicates: false
             })
             .select()
 
