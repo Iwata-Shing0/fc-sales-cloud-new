@@ -11,10 +11,15 @@ export default function AdminDashboard({ user }) {
     password: ''
   })
   const [message, setMessage] = useState('')
+  const [salesRanking, setSalesRanking] = useState([])
+  const [loadingRanking, setLoadingRanking] = useState(false)
 
   useEffect(() => {
     fetchStores()
-  }, [])
+    if (activeTab === 'ranking') {
+      fetchSalesRanking()
+    }
+  }, [activeTab])
 
   const fetchStores = async () => {
     try {
@@ -29,6 +34,36 @@ export default function AdminDashboard({ user }) {
     } catch (error) {
       console.error('店舗一覧取得エラー:', error)
     }
+  }
+
+  const fetchSalesRanking = async () => {
+    setLoadingRanking(true)
+    try {
+      const token = localStorage.getItem('token')
+      const currentDate = new Date()
+      const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+      const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
+      
+      const response = await fetch(`/api/sales/monthly/${currentDate.getFullYear()}/${currentDate.getMonth() + 1}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setSalesRanking(data)
+      }
+    } catch (error) {
+      console.error('売上ランキング取得エラー:', error)
+    } finally {
+      setLoadingRanking(false)
+    }
+  }
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('ja-JP', {
+      style: 'currency',
+      currency: 'JPY'
+    }).format(amount)
   }
 
   const handleSubmit = async (e) => {
@@ -80,6 +115,12 @@ export default function AdminDashboard({ user }) {
           店舗管理
         </button>
         <button
+          className={`btn ${activeTab === 'ranking' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setActiveTab('ranking')}
+        >
+          売上ランキング
+        </button>
+        <button
           className={`btn ${activeTab === 'demo' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setActiveTab('demo')}
         >
@@ -125,6 +166,70 @@ export default function AdminDashboard({ user }) {
         </div>
       )}
 
+      {activeTab === 'ranking' && (
+        <div className="card">
+          <h2>売上ランキング - {new Date().getFullYear()}年{new Date().getMonth() + 1}月</h2>
+          {loadingRanking ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>読み込み中...</div>
+          ) : (
+            <>
+              {salesRanking.length > 0 ? (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f8f9fa' }}>
+                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center' }}>順位</th>
+                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'left' }}>店舗名</th>
+                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>売上金額</th>
+                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>客数</th>
+                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>客単価</th>
+                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>営業日数</th>
+                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>日平均売上</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {salesRanking.map((store, index) => (
+                        <tr key={store.store_id} style={{ backgroundColor: index < 3 ? '#fff3cd' : 'transparent' }}>
+                          <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center', fontWeight: 'bold' }}>
+                            {index + 1}
+                            {index === 0 && '🥇'}
+                            {index === 1 && '🥈'}
+                            {index === 2 && '🥉'}
+                          </td>
+                          <td style={{ padding: '12px', border: '1px solid #dee2e6', fontWeight: 'bold' }}>
+                            {store.store_name}
+                          </td>
+                          <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right', fontWeight: 'bold' }}>
+                            {formatCurrency(store.total_sales)}
+                          </td>
+                          <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>
+                            {store.total_customers}人
+                          </td>
+                          <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>
+                            {store.total_customers > 0 ? formatCurrency(Math.round(store.total_sales / store.total_customers)) : '¥0'}
+                          </td>
+                          <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>
+                            {store.days_count}日
+                          </td>
+                          <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>
+                            {formatCurrency(Math.round(store.avg_daily_sales))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px' }}>
+                  <p>売上データがありません。</p>
+                  <p>店舗から売上データを入力してください。</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
       {activeTab === 'demo' && (
         <div className="card">
           <h2>デモ機能</h2>
@@ -134,8 +239,8 @@ export default function AdminDashboard({ user }) {
             <li>✅ Supabase PostgreSQL データベース</li>
             <li>✅ JWT認証システム</li>
             <li>✅ 店舗・ユーザー管理機能</li>
-            <li>🔄 売上データ管理（開発中）</li>
-            <li>🔄 ランキング・グラフ機能（開発中）</li>
+            <li>✅ 売上データ管理機能</li>
+            <li>✅ 売上ランキング機能</li>
           </ul>
         </div>
       )}
