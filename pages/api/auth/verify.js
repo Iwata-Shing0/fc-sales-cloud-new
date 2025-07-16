@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     const { data: user, error } = await supabase
       .from('users')
       .select('id, username, role, store_id')
-      .eq('id', decoded.userId)
+      .eq('id', decoded.id)
       .single()
 
     if (error || !user) {
