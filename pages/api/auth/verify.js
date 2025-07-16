@@ -1,10 +1,5 @@
 import jwt from 'jsonwebtoken'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
+import { supabase } from '../../../lib/supabase'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -12,6 +7,12 @@ export default async function handler(req, res) {
   }
 
   try {
+    // 環境変数の確認
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET が設定されていません')
+      return res.status(500).json({ message: 'サーバー設定エラー: JWT_SECRET が設定されていません' })
+    }
+
     const authHeader = req.headers.authorization
     console.log('Auth verify - authHeader:', authHeader)
     
@@ -23,8 +24,20 @@ export default async function handler(req, res) {
     const token = authHeader.substring(7)
     console.log('Auth verify - token length:', token.length)
     
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    console.log('Auth verify - decoded token:', decoded)
+    let decoded
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET)
+      console.log('Auth verify - decoded token:', decoded)
+    } catch (jwtError) {
+      console.error('JWT verification error:', jwtError.message)
+      return res.status(401).json({ message: 'トークンが無効です: ' + jwtError.message })
+    }
+
+    // Supabaseクライアントの確認
+    if (!supabase) {
+      console.error('Supabase クライアントが初期化されていません')
+      return res.status(500).json({ message: 'サーバー設定エラー: データベース接続に失敗しました' })
+    }
 
     // ユーザー情報を取得
     const { data: user, error } = await supabase
@@ -35,7 +48,12 @@ export default async function handler(req, res) {
 
     console.log('Auth verify - DB result:', { user, error })
 
-    if (error || !user) {
+    if (error) {
+      console.error('Database error:', error)
+      return res.status(500).json({ message: 'データベースエラー: ' + error.message })
+    }
+
+    if (!user) {
       console.log('Auth verify - user not found')
       return res.status(401).json({ message: 'ユーザーが見つかりません' })
     }
@@ -43,7 +61,7 @@ export default async function handler(req, res) {
     console.log('Auth verify - success')
     res.status(200).json(user)
   } catch (error) {
-    console.error('Auth verify - エラー:', error.message)
-    res.status(401).json({ message: '無効なトークンです' })
+    console.error('Auth verify - 予期しないエラー:', error)
+    res.status(500).json({ message: '予期しないエラーが発生しました: ' + error.message })
   }
 }

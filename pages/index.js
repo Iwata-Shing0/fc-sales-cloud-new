@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Login from '../components/Login'
 import AdminDashboard from '../components/AdminDashboard'
 import StoreDashboard from '../components/StoreDashboard'
@@ -7,6 +7,7 @@ import Header from '../components/Header'
 export default function Home() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const adminDashboardRef = useRef(null)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -30,6 +31,12 @@ export default function Home() {
     setUser(null)
   }
 
+  const handleSettings = () => {
+    if (adminDashboardRef.current && adminDashboardRef.current.handleSettings) {
+      adminDashboardRef.current.handleSettings()
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -40,11 +47,17 @@ export default function Home() {
 
   return (
     <div>
-      {user && <Header user={user} onLogout={handleLogout} />}
+      {user && (
+        <Header 
+          user={user} 
+          onLogout={handleLogout} 
+          onSettings={user.role === 'admin' && !user.isAdminMode ? handleSettings : null}
+        />
+      )}
       {!user ? (
         <Login onLogin={handleLogin} />
       ) : user.role === 'admin' ? (
-        <AdminDashboard user={user} />
+        <AdminDashboard ref={adminDashboardRef} user={user} />
       ) : (
         <StoreDashboard user={user} />
       )}

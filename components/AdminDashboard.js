@@ -1,12 +1,17 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 
-export default function AdminDashboard({ user }) {
+const AdminDashboard = forwardRef(({ user }, ref) => {
   const [activeTab, setActiveTab] = useState('stores')
   const [stores, setStores] = useState([])
   const [showModal, setShowModal] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [newStore, setNewStore] = useState({
     name: '',
     storeCode: '',
+    username: '',
+    password: ''
+  })
+  const [adminSettings, setAdminSettings] = useState({
     username: '',
     password: ''
   })
@@ -20,14 +25,30 @@ export default function AdminDashboard({ user }) {
   const [storeDetailLoading, setStoreDetailLoading] = useState(false)
   const [storesWithSales, setStoresWithSales] = useState([])
   const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'asc' })
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [statistics, setStatistics] = useState({
+    totalSales: 0,
+    totalCustomers: 0,
+    avgCustomerPrice: 0,
+    avgSales: 0
+  })
+  const [settingsSaving, setSettingsSaving] = useState(false)
   const fileInputRef = useRef(null)
+
+  const currentYear = currentDate.getFullYear()
+  const currentMonth = currentDate.getMonth() + 1
+
+  useImperativeHandle(ref, () => ({
+    handleSettings
+  }))
 
   useEffect(() => {
     fetchStores()
+    fetchStatistics()
     if (activeTab === 'ranking') {
       fetchSalesRanking()
     }
-  }, [activeTab])
+  }, [activeTab, currentDate])
 
   const fetchStores = async () => {
     try {
@@ -48,9 +69,6 @@ export default function AdminDashboard({ user }) {
   const fetchStoresWithSales = async (storesList = stores) => {
     try {
       const token = localStorage.getItem('token')
-      const currentDate = new Date()
-      const currentYear = currentDate.getFullYear()
-      const currentMonth = currentDate.getMonth() + 1
       
       const storesWithSalesData = await Promise.all(
         storesList.map(async (store) => {
@@ -94,6 +112,73 @@ export default function AdminDashboard({ user }) {
     } catch (error) {
       console.error('売上データ付き店舗一覧取得エラー:', error)
     }
+  }
+
+  const fetchStatistics = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/admin/statistics?year=${currentYear}&month=${currentMonth}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setStatistics(data)
+      }
+    } catch (error) {
+      console.error('統計情報取得エラー:', error)
+    }
+  }
+
+  const handleSettings = () => {
+    setShowSettingsModal(true)
+    setAdminSettings({
+      username: user.username,
+      password: ''
+    })
+  }
+
+  const handleSettingsSave = async () => {
+    setSettingsSaving(true)
+    setMessage('')
+
+    if (!adminSettings.username || !adminSettings.password) {
+      setMessage('ユーザー名とパスワードを入力してください')
+      setSettingsSaving(false)
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(adminSettings)
+      })
+
+      if (response.ok) {
+        setMessage('管理者設定を更新しました')
+        setShowSettingsModal(false)
+        setTimeout(() => setMessage(''), 3000)
+      } else {
+        const result = await response.json()
+        setMessage(`更新に失敗しました: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('設定保存エラー:', error)
+      setMessage('設定保存中にエラーが発生しました')
+    } finally {
+      setSettingsSaving(false)
+    }
+  }
+
+  const changeMonth = (direction) => {
+    const newDate = new Date(currentDate)
+    newDate.setMonth(currentDate.getMonth() + direction)
+    setCurrentDate(newDate)
   }
 
   const fetchSalesRanking = async () => {
@@ -510,6 +595,80 @@ export default function AdminDashboard({ user }) {
 
   return (
     <div className="container">
+      {/* 月切り替えと統計情報 */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '20px',
+        backgroundColor: '#f8f9fa',
+        padding: '15px',
+        borderRadius: '5px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <button 
+            onClick={() => changeMonth(-1)}
+            style={{
+              backgroundColor: '#6c757d',
+              color: 'white',
+              border: 'none',
+              padding: '8px 12px',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            ← 前月
+          </button>
+          
+          <h3 style={{ margin: 0, fontSize: '18px' }}>
+            {currentYear}年{currentMonth}月
+          </h3>
+          
+          <button 
+            onClick={() => changeMonth(1)}
+            style={{
+              backgroundColor: '#6c757d',
+              color: 'white',
+              border: 'none',
+              padding: '8px 12px',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            次月 →
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: '20px', fontSize: '14px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ color: '#666', marginBottom: '2px' }}>売上合計</div>
+            <div style={{ fontWeight: 'bold', color: '#007bff' }}>
+              {formatCurrency(statistics.totalSales)}
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ color: '#666', marginBottom: '2px' }}>客数合計</div>
+            <div style={{ fontWeight: 'bold', color: '#28a745' }}>
+              {statistics.totalCustomers.toLocaleString()}人
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ color: '#666', marginBottom: '2px' }}>平均客単価</div>
+            <div style={{ fontWeight: 'bold', color: '#ffc107' }}>
+              {formatCurrency(statistics.avgCustomerPrice)}
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ color: '#666', marginBottom: '2px' }}>平均売上</div>
+            <div style={{ fontWeight: 'bold', color: '#dc3545' }}>
+              {formatCurrency(statistics.avgSales)}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
         <button
           className={`btn ${activeTab === 'stores' ? 'btn-primary' : 'btn-secondary'}`}
@@ -522,12 +681,6 @@ export default function AdminDashboard({ user }) {
           onClick={() => setActiveTab('ranking')}
         >
           売上ランキング
-        </button>
-        <button
-          className={`btn ${activeTab === 'demo' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setActiveTab('demo')}
-        >
-          デモ機能
         </button>
       </div>
 
@@ -773,18 +926,107 @@ export default function AdminDashboard({ user }) {
         </div>
       )}
 
-      {activeTab === 'demo' && (
-        <div className="card">
-          <h2>デモ機能</h2>
-          <p>クラウド版FC売上管理システムが正常に動作しています！</p>
-          <ul style={{ margin: '20px 0', paddingLeft: '20px' }}>
-            <li>✅ Next.js + Vercel でのホスティング</li>
-            <li>✅ Supabase PostgreSQL データベース</li>
-            <li>✅ JWT認証システム</li>
-            <li>✅ 店舗・ユーザー管理機能</li>
-            <li>✅ 売上データ管理機能</li>
-            <li>✅ 売上ランキング機能</li>
-          </ul>
+      {/* 設定モーダル */}
+      {showSettingsModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '8px',
+            padding: '20px',
+            width: '90%',
+            maxWidth: '400px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2>管理者設定</h2>
+              <button 
+                style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}
+                onClick={() => setShowSettingsModal(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                ユーザー名
+              </label>
+              <input
+                type="text"
+                value={adminSettings.username}
+                onChange={(e) => setAdminSettings({...adminSettings, username: e.target.value})}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                新しいパスワード
+              </label>
+              <input
+                type="password"
+                value={adminSettings.password}
+                onChange={(e) => setAdminSettings({...adminSettings, password: e.target.value})}
+                placeholder="新しいパスワードを入力"
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button 
+                type="button" 
+                onClick={() => setShowSettingsModal(false)}
+                style={{
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                キャンセル
+              </button>
+              <button 
+                onClick={handleSettingsSave}
+                disabled={settingsSaving}
+                style={{
+                  backgroundColor: settingsSaving ? '#ccc' : '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: settingsSaving ? 'not-allowed' : 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                {settingsSaving ? '保存中...' : '保存'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1030,4 +1272,8 @@ export default function AdminDashboard({ user }) {
       )}
     </div>
   )
-}
+})
+
+AdminDashboard.displayName = 'AdminDashboard'
+
+export default AdminDashboard

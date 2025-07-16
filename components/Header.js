@@ -1,4 +1,4 @@
-export default function Header({ user, onLogout }) {
+export default function Header({ user, onLogout, onSettings }) {
   return (
     <header className="header">
       <h1 style={{ fontSize: '20px' }}>LM売上管理</h1>
@@ -11,6 +11,22 @@ export default function Header({ user, onLogout }) {
               : user.store_name
           } - {user.username}
         </span>
+        {user.role === 'admin' && !user.isAdminMode && onSettings && (
+          <button 
+            className="btn btn-secondary" 
+            onClick={onSettings}
+            style={{
+              backgroundColor: '#6c757d',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            ⚙️ 設定
+          </button>
+        )}
         <button className="btn btn-danger" onClick={onLogout}>
           ログアウト
         </button>
