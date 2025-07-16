@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "FC加盟店向け売上管理システム（クラウド版）",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
