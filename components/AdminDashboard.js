@@ -321,9 +321,9 @@ export default function AdminDashboard({ user }) {
   }
 
   const handleStoreNameClick = (storeId) => {
-    // 新しいタブで店舗画面を開く
-    const storeUrl = `/store/${storeId}`
-    window.open(storeUrl, '_blank')
+    // 管理者用店舗編集画面を開く（同じタブ）
+    const storeUrl = `/admin/store/${storeId}`
+    window.location.href = storeUrl
   }
 
   return (

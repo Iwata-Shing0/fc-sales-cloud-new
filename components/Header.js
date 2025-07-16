@@ -4,7 +4,12 @@ export default function Header({ user, onLogout }) {
       <h1 style={{ fontSize: '20px' }}>LM売上管理</h1>
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
         <span>
-          {user.role === 'admin' ? '本部管理者' : user.store_name} - {user.username}
+          {user.role === 'admin' && !user.isAdminMode 
+            ? '本部管理者' 
+            : user.isAdminMode 
+              ? `管理者 → ${user.store_name}`
+              : user.store_name
+          } - {user.username}
         </span>
         <button className="btn btn-danger" onClick={onLogout}>
           ログアウト
