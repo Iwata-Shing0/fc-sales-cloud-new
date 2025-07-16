@@ -11,6 +11,8 @@ export default function StoreDashboard({ user }) {
   const [monthlyTarget, setMonthlyTarget] = useState(0)
   const [targetEditing, setTargetEditing] = useState(false)
   const [tempTarget, setTempTarget] = useState('')
+  const [selectedDays, setSelectedDays] = useState(new Set())
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const fileInputRef = useRef(null)
 
   const currentYear = currentDate.getFullYear()
@@ -45,6 +47,11 @@ export default function StoreDashboard({ user }) {
           }
         })
         setSalesData(salesByDate)
+        console.log('fetchSalesData 結果:', {
+          取得データ件数: data.length,
+          salesByDate,
+          データのある日: Object.keys(salesByDate).map(day => parseInt(day)).sort((a, b) => a - b)
+        })
       }
     } catch (error) {
       console.error('データ取得エラー:', error)
@@ -132,9 +139,66 @@ export default function StoreDashboard({ user }) {
       ...prev,
       [day]: {
         ...prev[day],
-        [field]: value === '' ? 0 : (parseFloat(value) || 0)
+        [field]: value === '' ? undefined : (parseFloat(value) || 0)
       }
     }))
+  }
+
+  const handleCheckboxChange = (day, checked) => {
+    const newSelectedDays = new Set(selectedDays)
+    if (checked) {
+      newSelectedDays.add(day)
+    } else {
+      newSelectedDays.delete(day)
+    }
+    setSelectedDays(newSelectedDays)
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedDays.size === 0) {
+      setMessage('削除する日付を選択してください')
+      return
+    }
+
+    const confirmDelete = window.confirm(`選択した${selectedDays.size}日分のデータを削除してもよろしいですか？`)
+    if (!confirmDelete) return
+
+    setDeleteLoading(true)
+    setMessage('')
+
+    try {
+      const token = localStorage.getItem('token')
+      const deleteRequests = Array.from(selectedDays).map(day => {
+        const dateString = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+        return {
+          date: dateString,
+          store_id: user.store_id,
+          delete: true
+        }
+      })
+
+      const response = await fetch('/api/sales/monthly', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ updates: deleteRequests })
+      })
+
+      if (response.ok) {
+        setMessage(`${selectedDays.size}日分のデータを削除しました`)
+        setSelectedDays(new Set())
+        fetchSalesData()
+      } else {
+        setMessage('削除に失敗しました')
+      }
+    } catch (error) {
+      console.error('削除エラー:', error)
+      setMessage('削除中にエラーが発生しました')
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   const calculateExTax = (taxIncAmount) => {
@@ -173,10 +237,24 @@ export default function StoreDashboard({ user }) {
     const currentDay = today.getDate()
     const isCurrentMonth = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth
     
-    // 現在の日付（今月の場合）または月末（過去・未来の月の場合）
-    const targetDay = isCurrentMonth ? currentDay : daysInMonth
+    // データが入力されている最後の日付を取得（0も含む、undefinedと空文字列は除外）
+    const daysWithData = Object.keys(salesData).map(day => parseInt(day)).filter(day => {
+      const dayData = salesData[day]
+      if (!dayData) return false
+      
+      // 売上も客数も空文字列またはundefinedの場合は除外
+      const hasSales = dayData.sales_amount !== undefined && dayData.sales_amount !== ''
+      const hasCustomers = dayData.customer_count !== undefined && dayData.customer_count !== ''
+      
+      return hasSales || hasCustomers
+    }).sort((a, b) => b - a) // 降順ソート
     
-    // 計画進捗率 = 経過日数 / 月の総日数 * 100
+    const lastDataDay = daysWithData.length > 0 ? daysWithData[0] : 0
+    
+    // 計画進捗率の基準日数: データのある最後の日付（15日まで入力したら15日として計算）
+    const targetDay = lastDataDay > 0 ? lastDataDay : (isCurrentMonth ? currentDay : daysInMonth)
+    
+    // 計画進捗率 = 基準日数 / 月の総日数 * 100
     const planProgress = (targetDay / daysInMonth) * 100
     
     // 実績売上
@@ -188,12 +266,40 @@ export default function StoreDashboard({ user }) {
     // 計画比進捗率 = 達成率 / 計画進捗率 * 100
     const progressRatio = planProgress > 0 ? (achievementRate / planProgress) * 100 : 0
     
+    // 実績客数
+    const actualCustomers = getMonthlyTotals().totalCustomers
+    
+    // 営業日数（データが入力されている日数）
+    const businessDays = daysWithData.length
+    
+    // デバッグ情報
+    console.log('calculateProgress デバッグ情報:', {
+      currentYear,
+      currentMonth,
+      today: today.toDateString(),
+      currentDay,
+      isCurrentMonth,
+      daysWithData,
+      lastDataDay,
+      targetDay,
+      businessDays,
+      daysInMonth,
+      planProgress,
+      salesDataKeys: Object.keys(salesData),
+      salesDataSample: Object.keys(salesData).slice(0, 5).map(day => ({
+        day,
+        data: salesData[day]
+      }))
+    })
+    
     return {
       planProgress: Math.round(planProgress * 10) / 10,
       achievementRate: Math.round(achievementRate * 10) / 10,
       progressRatio: Math.round(progressRatio * 10) / 10,
       actualSales,
+      actualCustomers,
       targetDay,
+      businessDays,
       isCurrentMonth
     }
   }
@@ -206,15 +312,29 @@ export default function StoreDashboard({ user }) {
       const updates = []
       Object.keys(salesData).forEach(day => {
         const dayData = salesData[day]
-        // 0値も含めて更新（売上・客数のいずれかが設定されている場合）
-        if (dayData.sales_amount !== undefined || dayData.customer_count !== undefined) {
+        // 0値も含めて更新（売上・客数のいずれかが入力されている場合）
+        // 空文字列の場合は削除扱いとする
+        const hasSales = dayData.sales_amount !== undefined && dayData.sales_amount !== ''
+        const hasCustomers = dayData.customer_count !== undefined && dayData.customer_count !== ''
+        
+        if (hasSales || hasCustomers) {
           // 日付を正確に作成するために、年月日を直接文字列で作成
           const dateString = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
           updates.push({
             date: dateString,
-            sales_amount: dayData.sales_amount || 0,
-            customer_count: dayData.customer_count || 0,
+            sales_amount: dayData.sales_amount === '' ? 0 : (dayData.sales_amount || 0),
+            customer_count: dayData.customer_count === '' ? 0 : (dayData.customer_count || 0),
             store_id: user.store_id
+          })
+        } else if (dayData.sales_amount === '' && dayData.customer_count === '') {
+          // 両方が空文字列の場合は削除リクエストに追加
+          const dateString = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+          updates.push({
+            date: dateString,
+            sales_amount: null,
+            customer_count: null,
+            store_id: user.store_id,
+            delete: true
           })
         }
       })
@@ -488,6 +608,23 @@ export default function StoreDashboard({ user }) {
           </button>
 
           <button
+            onClick={handleDeleteSelected}
+            disabled={deleteLoading || selectedDays.size === 0}
+            style={{
+              backgroundColor: (deleteLoading || selectedDays.size === 0) ? '#ccc' : '#dc3545',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '3px',
+              cursor: (deleteLoading || selectedDays.size === 0) ? 'not-allowed' : 'pointer',
+              fontSize: '11px',
+              fontWeight: 'bold'
+            }}
+          >
+            {deleteLoading ? '削除中...' : `選択削除${selectedDays.size > 0 ? `(${selectedDays.size}件)` : ''}`}
+          </button>
+
+          <button
             onClick={() => window.open('https://lm-order.com', '_blank')}
             style={{
               backgroundColor: '#28a745',
@@ -654,7 +791,7 @@ export default function StoreDashboard({ user }) {
 
         {/* 進捗表示 */}
         {monthlyTarget > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px' }}>
             <div style={{ textAlign: 'center', padding: '8px', backgroundColor: 'white', borderRadius: '3px' }}>
               <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>実績売上</div>
               <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#007bff' }}>
@@ -679,21 +816,29 @@ export default function StoreDashboard({ user }) {
                 {progressData.planProgress}%
               </div>
               <div style={{ fontSize: '10px', color: '#999' }}>
-                ({progressData.targetDay}/{daysInMonth}日経過)
+                (入力: {progressData.targetDay}/{daysInMonth}日)
               </div>
             </div>
             
             <div style={{ textAlign: 'center', padding: '8px', backgroundColor: 'white', borderRadius: '3px' }}>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>進捗評価</div>
+              <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>日平均売上</div>
               <div style={{ 
                 fontSize: '13px', 
                 fontWeight: 'bold',
-                color: progressData.progressRatio >= 100 ? '#28a745' : progressData.progressRatio >= 80 ? '#ffc107' : '#dc3545'
+                color: '#007bff'
               }}>
-                {progressData.progressRatio}%
+                ¥{progressData.businessDays > 0 ? Math.round(progressData.actualSales / progressData.businessDays).toLocaleString() : '0'}
               </div>
-              <div style={{ fontSize: '10px', color: '#999' }}>
-                {progressData.progressRatio >= 100 ? '順調' : progressData.progressRatio >= 80 ? '注意' : '遅延'}
+            </div>
+            
+            <div style={{ textAlign: 'center', padding: '8px', backgroundColor: 'white', borderRadius: '3px' }}>
+              <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>日平均客数</div>
+              <div style={{ 
+                fontSize: '13px', 
+                fontWeight: 'bold',
+                color: '#28a745'
+              }}>
+                {progressData.businessDays > 0 ? Math.round(progressData.actualCustomers / progressData.businessDays) : 0}人
               </div>
             </div>
           </div>
@@ -709,6 +854,15 @@ export default function StoreDashboard({ user }) {
         }}>
           <thead>
             <tr style={{ backgroundColor: '#f8f9fa' }}>
+              <th style={{ 
+                padding: '8px 4px', 
+                border: '1px solid #dee2e6', 
+                textAlign: 'center', 
+                width: '30px',
+                fontSize: '11px'
+              }}>
+                選択
+              </th>
               <th style={{ 
                 padding: '8px 4px', 
                 border: '1px solid #dee2e6', 
@@ -770,6 +924,21 @@ export default function StoreDashboard({ user }) {
                     padding: '6px 2px', 
                     border: '1px solid #dee2e6', 
                     textAlign: 'center',
+                    width: '30px'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedDays.has(day)}
+                      onChange={(e) => handleCheckboxChange(day, e.target.checked)}
+                      style={{
+                        cursor: 'pointer'
+                      }}
+                    />
+                  </td>
+                  <td style={{ 
+                    padding: '6px 2px', 
+                    border: '1px solid #dee2e6', 
+                    textAlign: 'center',
                     fontWeight: 'bold',
                     color: dayColor,
                     width: '50px',
@@ -794,7 +963,7 @@ export default function StoreDashboard({ user }) {
                         textAlign: 'right',
                         fontSize: '11px'
                       }}
-                      placeholder="0"
+                      placeholder=""
                       min="0"
                     />
                   </td>
@@ -815,7 +984,7 @@ export default function StoreDashboard({ user }) {
                         textAlign: 'right',
                         fontSize: '11px'
                       }}
-                      placeholder="0"
+                      placeholder=""
                       min="0"
                     />
                   </td>

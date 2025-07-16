@@ -15,9 +15,23 @@ export default async function handler(req, res) {
     const results = []
     
     for (const update of updates) {
-      const { date, sales_amount, customer_count, store_id } = update
+      const { date, sales_amount, customer_count, store_id, delete: shouldDelete } = update
       
       if (!date || !store_id) {
+        continue
+      }
+
+      if (shouldDelete) {
+        // 削除処理
+        const { error } = await supabase
+          .from('sales_data')
+          .delete()
+          .eq('date', date)
+          .eq('store_id', store_id)
+        
+        if (error) {
+          console.error('Delete error:', error)
+        }
         continue
       }
 

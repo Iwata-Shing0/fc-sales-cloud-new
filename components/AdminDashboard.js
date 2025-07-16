@@ -30,7 +30,8 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
     totalSales: 0,
     totalCustomers: 0,
     avgCustomerPrice: 0,
-    avgSales: 0
+    avgSales: 0,
+    avgCustomers: 0
   })
   const [settingsSaving, setSettingsSaving] = useState(false)
   const fileInputRef = useRef(null)
@@ -641,29 +642,71 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: '20px', fontSize: '14px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ color: '#666', marginBottom: '2px' }}>売上合計</div>
-            <div style={{ fontWeight: 'bold', color: '#007bff' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(5, 1fr)', 
+          gap: '15px', 
+          fontSize: '14px',
+          minWidth: '500px'
+        }}>
+          <div style={{ 
+            textAlign: 'center', 
+            backgroundColor: 'white',
+            padding: '10px',
+            borderRadius: '4px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ color: '#666', marginBottom: '4px', fontSize: '12px' }}>売上合計</div>
+            <div style={{ fontWeight: 'bold', color: '#007bff', fontSize: '16px' }}>
               {formatCurrency(statistics.totalSales)}
             </div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ color: '#666', marginBottom: '2px' }}>客数合計</div>
-            <div style={{ fontWeight: 'bold', color: '#28a745' }}>
+          <div style={{ 
+            textAlign: 'center', 
+            backgroundColor: 'white',
+            padding: '10px',
+            borderRadius: '4px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ color: '#666', marginBottom: '4px', fontSize: '12px' }}>客数合計</div>
+            <div style={{ fontWeight: 'bold', color: '#28a745', fontSize: '16px' }}>
               {statistics.totalCustomers.toLocaleString()}人
             </div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ color: '#666', marginBottom: '2px' }}>平均客単価</div>
-            <div style={{ fontWeight: 'bold', color: '#ffc107' }}>
+          <div style={{ 
+            textAlign: 'center', 
+            backgroundColor: 'white',
+            padding: '10px',
+            borderRadius: '4px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ color: '#666', marginBottom: '4px', fontSize: '12px' }}>平均客単価</div>
+            <div style={{ fontWeight: 'bold', color: '#ffc107', fontSize: '16px' }}>
               {formatCurrency(statistics.avgCustomerPrice)}
             </div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ color: '#666', marginBottom: '2px' }}>平均売上</div>
-            <div style={{ fontWeight: 'bold', color: '#dc3545' }}>
+          <div style={{ 
+            textAlign: 'center', 
+            backgroundColor: 'white',
+            padding: '10px',
+            borderRadius: '4px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ color: '#666', marginBottom: '4px', fontSize: '12px' }}>平均売上</div>
+            <div style={{ fontWeight: 'bold', color: '#dc3545', fontSize: '16px' }}>
               {formatCurrency(statistics.avgSales)}
+            </div>
+          </div>
+          <div style={{ 
+            textAlign: 'center', 
+            backgroundColor: 'white',
+            padding: '10px',
+            borderRadius: '4px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ color: '#666', marginBottom: '4px', fontSize: '12px' }}>平均客数</div>
+            <div style={{ fontWeight: 'bold', color: '#6f42c1', fontSize: '16px' }}>
+              {statistics.avgCustomers.toLocaleString()}人
             </div>
           </div>
         </div>
