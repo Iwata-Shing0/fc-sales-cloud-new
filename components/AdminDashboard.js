@@ -321,10 +321,8 @@ export default function AdminDashboard({ user }) {
   }
 
   const handleStoreNameClick = (storeId) => {
-    console.log('AdminDashboard - handleStoreNameClick called with storeId:', storeId)
     // 新しいタブで店舗画面を開く
     const storeUrl = `/store/${storeId}`
-    console.log('AdminDashboard - opening URL:', storeUrl)
     window.open(storeUrl, '_blank')
   }
 

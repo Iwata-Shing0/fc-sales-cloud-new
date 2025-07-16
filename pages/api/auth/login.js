@@ -1,7 +1,7 @@
-const jwt = require('jsonwebtoken')
-const { User } = require('../../../lib/db')
+import jwt from 'jsonwebtoken'
+import { User } from '../../../lib/db'
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' })
   }
