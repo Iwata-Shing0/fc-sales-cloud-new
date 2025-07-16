@@ -12,28 +12,37 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('Auth verify - start')
     const authHeader = req.headers.authorization
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('Auth verify - no auth header')
       return res.status(401).json({ message: 'トークンが必要です' })
     }
 
     const token = authHeader.substring(7)
+    console.log('Auth verify - decoding token')
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    console.log('Auth verify - decoded:', decoded)
 
     // ユーザー情報を取得
+    console.log('Auth verify - fetching user from DB')
     const { data: user, error } = await supabase
       .from('users')
       .select('id, username, role, store_id')
       .eq('id', decoded.id)
       .single()
 
+    console.log('Auth verify - DB result:', { user, error })
+
     if (error || !user) {
+      console.log('Auth verify - user not found')
       return res.status(401).json({ message: 'ユーザーが見つかりません' })
     }
 
+    console.log('Auth verify - success, returning user:', user)
     res.status(200).json(user)
   } catch (error) {
-    console.error('認証エラー:', error)
+    console.error('Auth verify - 認証エラー:', error)
     res.status(401).json({ message: '無効なトークンです' })
   }
 }
