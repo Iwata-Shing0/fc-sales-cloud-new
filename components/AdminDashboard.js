@@ -285,6 +285,47 @@ export default function AdminDashboard({ user }) {
     }
   }
 
+  const handleRankingCsvDownload = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const currentDate = new Date()
+      const year = currentDate.getFullYear()
+      const month = currentDate.getMonth() + 1
+      
+      // CSV形式のデータを作成
+      const csvHeader = 'ランキング,店舗名,売上金額,客数,客単価,営業日数,日平均売上\n'
+      const csvData = salesRanking.map((store, index) => {
+        const ranking = index + 1
+        const avgCustomerPrice = store.total_customers > 0 ? Math.round(store.total_sales / store.total_customers) : 0
+        return `${ranking},${store.store_name},${store.total_sales},${store.total_customers},${avgCustomerPrice},${store.days_count},${Math.round(store.avg_daily_sales)}`
+      }).join('\n')
+      
+      const csvContent = csvHeader + csvData
+      
+      // BOMを追加してUTF-8で保存
+      const bom = '\uFEFF'
+      const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `売上ランキング_${year}年${month}月.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+      
+      setMessage('売上ランキングCSVをダウンロードしました')
+    } catch (error) {
+      setMessage('CSVダウンロード中にエラーが発生しました')
+    }
+  }
+
+  const handleStoreNameClick = (storeId) => {
+    // 新しいタブで店舗画面を開く
+    const storeUrl = `/store/${storeId}`
+    window.open(storeUrl, '_blank')
+  }
+
   return (
     <div className="container">
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
@@ -339,7 +380,7 @@ export default function AdminDashboard({ user }) {
                   <td>{store.id}</td>
                   <td>
                     <span 
-                      onClick={() => fetchStoreDetail(store.id)}
+                      onClick={() => handleStoreNameClick(store.id)}
                       style={{ 
                         cursor: 'pointer', 
                         textDecoration: 'underline',
@@ -427,7 +468,18 @@ export default function AdminDashboard({ user }) {
 
       {activeTab === 'ranking' && (
         <div className="card">
-          <h2>売上ランキング - {new Date().getFullYear()}年{new Date().getMonth() + 1}月</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2>売上ランキング - {new Date().getFullYear()}年{new Date().getMonth() + 1}月</h2>
+            {salesRanking.length > 0 && (
+              <button 
+                className="btn btn-secondary"
+                onClick={handleRankingCsvDownload}
+                style={{ fontSize: '14px', padding: '8px 16px' }}
+              >
+                CSV出力
+              </button>
+            )}
+          </div>
           {loadingRanking ? (
             <div style={{ textAlign: 'center', padding: '20px' }}>読み込み中...</div>
           ) : (
@@ -456,7 +508,16 @@ export default function AdminDashboard({ user }) {
                             {index === 2 && '🥉'}
                           </td>
                           <td style={{ padding: '12px', border: '1px solid #dee2e6', fontWeight: 'bold' }}>
-                            {store.store_name}
+                            <span 
+                              onClick={() => handleStoreNameClick(store.store_id)}
+                              style={{ 
+                                cursor: 'pointer', 
+                                textDecoration: 'underline',
+                                color: '#007bff'
+                              }}
+                            >
+                              {store.store_name}
+                            </span>
                           </td>
                           <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right', fontWeight: 'bold' }}>
                             {formatCurrency(store.total_sales)}
