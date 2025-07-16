@@ -1,25 +1,26 @@
 import { supabase } from '../../../lib/supabase'
 import jwt from 'jsonwebtoken'
 
-function authenticateToken(req, res, next) {
+function authenticateToken(req) {
   const authHeader = req.headers['authorization']
   const token = authHeader && authHeader.split(' ')[1]
 
   if (!token) {
-    return res.status(401).json({ message: 'アクセストークンが必要です' })
+    throw new Error('アクセストークンが必要です')
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: 'トークンが無効です' })
-    }
-    req.user = user
-    next()
-  })
+  try {
+    const user = jwt.verify(token, process.env.JWT_SECRET)
+    return user
+  } catch (err) {
+    throw new Error('トークンが無効です')
+  }
 }
 
 export default async function handler(req, res) {
-  authenticateToken(req, res, async () => {
+  try {
+    const user = authenticateToken(req)
+    req.user = user
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Method not allowed' })
     }
@@ -65,11 +66,13 @@ export default async function handler(req, res) {
         
         // 複数の日付形式に対応
         if (cleanDateStr.match(/^\d{4}\/\d{1,2}\/\d{1,2}$/)) {
-          // YYYY/MM/DD 形式
-          date = new Date(cleanDateStr)
+          // YYYY/MM/DD 形式 - タイムゾーンの問題を避けるため手動解析
+          const parts = cleanDateStr.split('/')
+          date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]))
         } else if (cleanDateStr.match(/^\d{4}-\d{1,2}-\d{1,2}$/)) {
-          // YYYY-MM-DD 形式
-          date = new Date(cleanDateStr)
+          // YYYY-MM-DD 形式 - タイムゾーンの問題を避けるため手動解析
+          const parts = cleanDateStr.split('-')
+          date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]))
         } else if (cleanDateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
           // MM/DD/YYYY 形式
           const parts = cleanDateStr.split('/')
@@ -89,6 +92,8 @@ export default async function handler(req, res) {
           errors.push(`行${i + 1}: 日付形式が無効です (${cleanDateStr})`)
           continue
         }
+
+        console.log(`CSV日付解析: ${cleanDateStr} -> ${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`)
 
         // 売上金額の処理（カンマや円マークを除去）
         const cleanSalesStr = salesAmountStr.toString().replace(/[,円¥￥]/g, '').trim()
@@ -114,7 +119,11 @@ export default async function handler(req, res) {
         }
 
         try {
-          const dateString = date.toISOString().split('T')[0]
+          // タイムゾーンの影響を避けて日付文字列を作成
+          const year = date.getFullYear()
+          const month = (date.getMonth() + 1).toString().padStart(2, '0')
+          const day = date.getDate().toString().padStart(2, '0')
+          const dateString = `${year}-${month}-${day}`
           
           // 既存レコードの確認
           const { data: existingData, error: selectError } = await supabase
@@ -154,9 +163,7 @@ export default async function handler(req, res) {
                 store_id: targetStoreId,
                 date: dateString,
                 sales_amount: salesAmount,
-                customer_count: customerCount,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
+                customer_count: customerCount
               })
               .select()
             
@@ -185,5 +192,14 @@ export default async function handler(req, res) {
       console.error('CSV upload error:', error)
       res.status(500).json({ error: 'サーバーエラーが発生しました' })
     }
-  })
+  } catch (error) {
+    console.error('Authentication error:', error)
+    if (error.message === 'アクセストークンが必要です') {
+      res.status(401).json({ error: error.message })
+    } else if (error.message === 'トークンが無効です') {
+      res.status(403).json({ error: error.message })
+    } else {
+      res.status(500).json({ error: 'サーバーエラーが発生しました' })
+    }
+  }
 }

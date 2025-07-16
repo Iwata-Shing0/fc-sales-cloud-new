@@ -18,6 +18,8 @@ export default function AdminDashboard({ user }) {
   const [selectedStoreData, setSelectedStoreData] = useState(null)
   const [showStoreDetail, setShowStoreDetail] = useState(false)
   const [storeDetailLoading, setStoreDetailLoading] = useState(false)
+  const [storesWithSales, setStoresWithSales] = useState([])
+  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'asc' })
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -36,9 +38,61 @@ export default function AdminDashboard({ user }) {
       const data = await response.json()
       if (response.ok) {
         setStores(data)
+        fetchStoresWithSales(data)
       }
     } catch (error) {
       console.error('店舗一覧取得エラー:', error)
+    }
+  }
+
+  const fetchStoresWithSales = async (storesList = stores) => {
+    try {
+      const token = localStorage.getItem('token')
+      const currentDate = new Date()
+      const currentYear = currentDate.getFullYear()
+      const currentMonth = currentDate.getMonth() + 1
+      
+      const storesWithSalesData = await Promise.all(
+        storesList.map(async (store) => {
+          try {
+            const response = await fetch(`/api/sales?year=${currentYear}&month=${currentMonth}&store_id=${store.id}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+            
+            if (response.ok) {
+              const salesData = await response.json()
+              const totalSales = salesData.reduce((sum, item) => sum + item.sales_amount, 0)
+              const totalCustomers = salesData.reduce((sum, item) => sum + item.customer_count, 0)
+              
+              return {
+                ...store,
+                totalSales,
+                totalCustomers,
+                avgCustomerPrice: totalCustomers > 0 ? Math.round(totalSales / totalCustomers) : 0
+              }
+            } else {
+              return {
+                ...store,
+                totalSales: 0,
+                totalCustomers: 0,
+                avgCustomerPrice: 0
+              }
+            }
+          } catch (error) {
+            console.error(`店舗${store.id}の売上データ取得エラー:`, error)
+            return {
+              ...store,
+              totalSales: 0,
+              totalCustomers: 0,
+              avgCustomerPrice: 0
+            }
+          }
+        })
+      )
+      
+      setStoresWithSales(storesWithSalesData)
+    } catch (error) {
+      console.error('売上データ付き店舗一覧取得エラー:', error)
     }
   }
 
@@ -63,13 +117,6 @@ export default function AdminDashboard({ user }) {
     } finally {
       setLoadingRanking(false)
     }
-  }
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('ja-JP', {
-      style: 'currency',
-      currency: 'JPY'
-    }).format(amount)
   }
 
   const handleSubmit = async (e) => {
@@ -326,6 +373,141 @@ export default function AdminDashboard({ user }) {
     window.location.href = storeUrl
   }
 
+  const handleStoreEdit = (storeId) => {
+    // 店舗編集ページに遷移
+    const editUrl = `/admin/edit-store/${storeId}`
+    window.location.href = editUrl
+  }
+
+  const handleStoresCsvUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    setCsvLoading(true)
+    setMessage('')
+
+    try {
+      const text = await file.text()
+      const cleanText = text.replace(/^\uFEFF/, '')
+      const lines = cleanText.split(/\r?\n/)
+      const rows = lines.map(line => line.split(',').map(cell => cell.trim().replace(/^["']|["']$/g, '')))
+      
+      // ヘッダー行をスキップし、有効なデータのみフィルタ
+      const dataRows = rows.slice(1).filter(row => row.length >= 4 && row[0] && row[1] && row[2] && row[3])
+
+      if (dataRows.length === 0) {
+        setMessage('有効なデータが見つかりません。CSV形式を確認してください。\n形式: 店舗名,店舗コード,ユーザー名,パスワード')
+        setCsvLoading(false)
+        return
+      }
+
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/stores/csv-update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ csvData: dataRows })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setMessage(`店舗データCSV更新完了: ${result.success}件成功, ${result.errors}件エラー`)
+        fetchStores() // 店舗一覧と売上データを再取得
+      } else {
+        const result = await response.json()
+        setMessage(`エラー: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('CSV処理エラー:', error)
+      setMessage(`CSVファイルの処理中にエラーが発生しました: ${error.message}`)
+    } finally {
+      setCsvLoading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleStoresCsvDownload = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/stores/csv-download', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `店舗データ_${new Date().toISOString().slice(0, 10)}.csv`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+        setMessage('店舗データCSVをダウンロードしました')
+      } else {
+        setMessage('CSVダウンロードに失敗しました')
+      }
+    } catch (error) {
+      setMessage('CSVダウンロード中にエラーが発生しました')
+    }
+  }
+
+  const handleSort = (key) => {
+    let direction = 'asc'
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc'
+    }
+    setSortConfig({ key, direction })
+  }
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('ja-JP', {
+      style: 'currency',
+      currency: 'JPY'
+    }).format(amount)
+  }
+
+  const getSortedStores = () => {
+    const sortableStores = [...storesWithSales]
+    if (sortConfig.key) {
+      sortableStores.sort((a, b) => {
+        let aValue = a[sortConfig.key]
+        let bValue = b[sortConfig.key]
+        
+        // 数値の場合
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue
+        }
+        
+        // 文字列の場合
+        aValue = aValue.toString().toLowerCase()
+        bValue = bValue.toString().toLowerCase()
+        
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1
+        }
+        return 0
+      })
+    }
+    return sortableStores
+  }
+
+  const getSortIcon = (columnKey) => {
+    if (sortConfig.key === columnKey) {
+      return sortConfig.direction === 'asc' ? ' ↑' : ' ↓'
+    }
+    return ''
+  }
+
   return (
     <div className="container">
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
@@ -364,21 +546,67 @@ export default function AdminDashboard({ user }) {
             </div>
           )}
 
-          <table className="table">
+          <div style={{ marginBottom: '10px', fontSize: '14px', color: '#666' }}>
+            現在の月：{new Date().getFullYear()}年{new Date().getMonth() + 1}月の売上データ
+          </div>
+
+          <table className="table" style={{ fontSize: '13px' }}>
             <thead>
-              <tr>
-                <th>店舗ID</th>
-                <th>店舗名</th>
-                <th>店舗コード</th>
-                <th>作成日</th>
-                <th>操作</th>
+              <tr style={{ backgroundColor: '#f8f9fa' }}>
+                <th 
+                  style={{ cursor: 'pointer', padding: '8px', border: '1px solid #dee2e6' }}
+                  onClick={() => handleSort('id')}
+                >
+                  店舗ID{getSortIcon('id')}
+                </th>
+                <th 
+                  style={{ cursor: 'pointer', padding: '8px', border: '1px solid #dee2e6' }}
+                  onClick={() => handleSort('name')}
+                >
+                  店舗名{getSortIcon('name')}
+                </th>
+                <th 
+                  style={{ cursor: 'pointer', padding: '8px', border: '1px solid #dee2e6' }}
+                  onClick={() => handleSort('store_code')}
+                >
+                  店舗コード{getSortIcon('store_code')}
+                </th>
+                <th 
+                  style={{ cursor: 'pointer', padding: '8px', border: '1px solid #dee2e6' }}
+                  onClick={() => handleSort('totalSales')}
+                >
+                  今月売上{getSortIcon('totalSales')}
+                </th>
+                <th 
+                  style={{ cursor: 'pointer', padding: '8px', border: '1px solid #dee2e6' }}
+                  onClick={() => handleSort('totalCustomers')}
+                >
+                  今月客数{getSortIcon('totalCustomers')}
+                </th>
+                <th 
+                  style={{ cursor: 'pointer', padding: '8px', border: '1px solid #dee2e6' }}
+                  onClick={() => handleSort('avgCustomerPrice')}
+                >
+                  平均客単価{getSortIcon('avgCustomerPrice')}
+                </th>
+                <th 
+                  style={{ cursor: 'pointer', padding: '8px', border: '1px solid #dee2e6' }}
+                  onClick={() => handleSort('created_at')}
+                >
+                  作成日{getSortIcon('created_at')}
+                </th>
+                <th style={{ padding: '8px', border: '1px solid #dee2e6' }}>
+                  操作
+                </th>
               </tr>
             </thead>
             <tbody>
-              {stores.map(store => (
+              {getSortedStores().map(store => (
                 <tr key={store.id}>
-                  <td>{store.id}</td>
-                  <td>
+                  <td style={{ padding: '8px', border: '1px solid #dee2e6' }}>
+                    {store.id}
+                  </td>
+                  <td style={{ padding: '8px', border: '1px solid #dee2e6' }}>
                     <span 
                       onClick={() => handleStoreNameClick(store.id)}
                       style={{ 
@@ -390,23 +618,36 @@ export default function AdminDashboard({ user }) {
                       {store.name}
                     </span>
                   </td>
-                  <td>{store.store_code}</td>
-                  <td>{new Date(store.created_at).toLocaleDateString('ja-JP')}</td>
-                  <td>
+                  <td style={{ padding: '8px', border: '1px solid #dee2e6' }}>
+                    {store.store_code}
+                  </td>
+                  <td style={{ padding: '8px', border: '1px solid #dee2e6', textAlign: 'right', fontWeight: 'bold' }}>
+                    {formatCurrency(store.totalSales || 0)}
+                  </td>
+                  <td style={{ padding: '8px', border: '1px solid #dee2e6', textAlign: 'right' }}>
+                    {(store.totalCustomers || 0).toLocaleString()}人
+                  </td>
+                  <td style={{ padding: '8px', border: '1px solid #dee2e6', textAlign: 'right' }}>
+                    {formatCurrency(store.avgCustomerPrice || 0)}
+                  </td>
+                  <td style={{ padding: '8px', border: '1px solid #dee2e6' }}>
+                    {store.created_at ? new Date(store.created_at).toLocaleDateString('ja-JP') : '-'}
+                  </td>
+                  <td style={{ padding: '8px', border: '1px solid #dee2e6' }}>
                     <button
-                      onClick={() => handleDeleteStore(store.id, store.name)}
-                      className="btn btn-danger btn-sm"
+                      onClick={() => handleStoreEdit(store.id)}
+                      className="btn btn-primary btn-sm"
                       style={{ 
                         fontSize: '12px', 
                         padding: '4px 8px',
-                        backgroundColor: '#dc3545',
+                        backgroundColor: '#007bff',
                         border: 'none',
                         borderRadius: '3px',
                         color: 'white',
                         cursor: 'pointer'
                       }}
                     >
-                      削除
+                      編集
                     </button>
                   </td>
                 </tr>
@@ -415,52 +656,34 @@ export default function AdminDashboard({ user }) {
           </table>
           
           <div style={{ marginTop: '20px' }}>
-            <h4>CSV管理</h4>
+            <h4>店舗データCSV管理</h4>
             <div style={{ marginBottom: '10px' }}>
-              <select
-                value={selectedStore}
-                onChange={(e) => setSelectedStore(e.target.value)}
-                style={{
-                  padding: '8px',
-                  marginRight: '10px',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px'
-                }}
-              >
-                <option value="">店舗を選択</option>
-                {stores.map(store => (
-                  <option key={store.id} value={store.id}>
-                    {store.name}
-                  </option>
-                ))}
-              </select>
-              
               <input
                 ref={fileInputRef}
                 type="file"
                 accept=".csv"
-                onChange={handleCsvUpload}
+                onChange={handleStoresCsvUpload}
                 style={{ display: 'none' }}
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={csvLoading || !selectedStore}
+                disabled={csvLoading}
                 className="btn btn-warning"
                 style={{ marginRight: '10px' }}
               >
-                {csvLoading ? 'アップロード中...' : 'CSV取込'}
+                {csvLoading ? 'アップロード中...' : '店舗データCSV取込'}
               </button>
               
               <button
-                onClick={handleCsvDownload}
-                disabled={!selectedStore}
+                onClick={handleStoresCsvDownload}
                 className="btn btn-secondary"
               >
-                CSV出力
+                店舗データCSV出力
               </button>
             </div>
             <small style={{ color: '#666' }}>
-              CSV形式: A列=日付, B列=税込売上, C列=客数
+              CSV形式: 店舗名,店舗コード,ユーザー名,パスワード<br/>
+              ※ 既存の店舗コードがある場合は上書き更新、新しい店舗コードは新規作成されます
             </small>
           </div>
         </div>

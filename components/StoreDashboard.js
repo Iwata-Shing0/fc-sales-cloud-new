@@ -8,6 +8,9 @@ export default function StoreDashboard({ user }) {
   const [message, setMessage] = useState('')
   const [csvLoading, setCsvLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('daily')
+  const [monthlyTarget, setMonthlyTarget] = useState(0)
+  const [targetEditing, setTargetEditing] = useState(false)
+  const [tempTarget, setTempTarget] = useState('')
   const fileInputRef = useRef(null)
 
   const currentYear = currentDate.getFullYear()
@@ -18,6 +21,7 @@ export default function StoreDashboard({ user }) {
 
   useEffect(() => {
     fetchMonthlySalesData()
+    fetchMonthlyTarget()
   }, [currentDate])
 
   const fetchMonthlySalesData = async () => {
@@ -47,12 +51,88 @@ export default function StoreDashboard({ user }) {
     }
   }
 
+  const fetchMonthlyTarget = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/targets?year=${currentYear}&month=${currentMonth}&store_id=${user.store_id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setMonthlyTarget(data.target_amount || 0)
+      }
+    } catch (error) {
+      console.error('目標取得エラー:', error)
+    }
+  }
+
+  const saveMonthlyTarget = async (targetAmount) => {
+    try {
+      const token = localStorage.getItem('token')
+      const requestData = {
+        store_id: user.store_id,
+        year: currentYear,
+        month: currentMonth,
+        target_amount: parseInt(targetAmount)
+      }
+      
+      console.log('Saving target with data:', requestData)
+      
+      const response = await fetch('/api/targets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(requestData)
+      })
+      
+      console.log('Save target response status:', response.status)
+      
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Save target result:', result)
+        setMonthlyTarget(parseInt(targetAmount))
+        setMessage('目標売上を保存しました')
+        setTimeout(() => setMessage(''), 3000)
+        // 目標を再取得して最新の状態を確認
+        fetchMonthlyTarget()
+      } else {
+        const errorResult = await response.json()
+        console.error('Save target error response:', errorResult)
+        setMessage(`保存エラー: ${errorResult.error}`)
+      }
+    } catch (error) {
+      console.error('目標保存エラー:', error)
+      setMessage('目標売上の保存に失敗しました')
+    }
+  }
+
+  const handleTargetEdit = () => {
+    setTargetEditing(true)
+    setTempTarget(monthlyTarget.toString())
+  }
+
+  const handleTargetSave = () => {
+    if (tempTarget && !isNaN(tempTarget)) {
+      saveMonthlyTarget(tempTarget)
+      setTargetEditing(false)
+    }
+  }
+
+  const handleTargetCancel = () => {
+    setTargetEditing(false)
+    setTempTarget('')
+  }
+
   const handleInputChange = (day, field, value) => {
     setSalesData(prev => ({
       ...prev,
       [day]: {
         ...prev[day],
-        [field]: parseFloat(value) || 0
+        [field]: value === '' ? 0 : (parseFloat(value) || 0)
       }
     }))
   }
@@ -88,6 +168,36 @@ export default function StoreDashboard({ user }) {
     }
   }
 
+  const calculateProgress = () => {
+    const today = new Date()
+    const currentDay = today.getDate()
+    const isCurrentMonth = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth
+    
+    // 現在の日付（今月の場合）または月末（過去・未来の月の場合）
+    const targetDay = isCurrentMonth ? currentDay : daysInMonth
+    
+    // 計画進捗率 = 経過日数 / 月の総日数 * 100
+    const planProgress = (targetDay / daysInMonth) * 100
+    
+    // 実績売上
+    const actualSales = getMonthlyTotals().totalSales
+    
+    // 達成率 = 実績売上 / 目標売上 * 100
+    const achievementRate = monthlyTarget > 0 ? (actualSales / monthlyTarget) * 100 : 0
+    
+    // 計画比進捗率 = 達成率 / 計画進捗率 * 100
+    const progressRatio = planProgress > 0 ? (achievementRate / planProgress) * 100 : 0
+    
+    return {
+      planProgress: Math.round(planProgress * 10) / 10,
+      achievementRate: Math.round(achievementRate * 10) / 10,
+      progressRatio: Math.round(progressRatio * 10) / 10,
+      actualSales,
+      targetDay,
+      isCurrentMonth
+    }
+  }
+
   const handleUpdateMonth = async () => {
     setLoading(true)
     setMessage('')
@@ -96,7 +206,8 @@ export default function StoreDashboard({ user }) {
       const updates = []
       Object.keys(salesData).forEach(day => {
         const dayData = salesData[day]
-        if (dayData.sales_amount > 0 || dayData.customer_count > 0) {
+        // 0値も含めて更新（売上・客数のいずれかが設定されている場合）
+        if (dayData.sales_amount !== undefined || dayData.customer_count !== undefined) {
           // 日付を正確に作成するために、年月日を直接文字列で作成
           const dateString = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
           updates.push({
@@ -256,6 +367,7 @@ export default function StoreDashboard({ user }) {
   }
 
   const monthlyTotals = getMonthlyTotals()
+  const progressData = calculateProgress()
 
   if (activeTab === 'analytics') {
     return <SalesAnalytics user={user} onTabChange={setActiveTab} />
@@ -445,6 +557,145 @@ export default function StoreDashboard({ user }) {
             fontSize: '12px'
           }}>
             {message}
+          </div>
+        )}
+      </div>
+
+      {/* 目標売上と進捗表示 */}
+      <div style={{
+        backgroundColor: '#e9ecef',
+        padding: '15px',
+        borderRadius: '5px',
+        marginBottom: '10px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold' }}>目標売上・進捗管理</h4>
+        </div>
+
+        {/* 目標売上設定 */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '10px', 
+          marginBottom: '15px',
+          flexWrap: 'wrap'
+        }}>
+          <span style={{ fontSize: '13px', fontWeight: 'bold' }}>目標売上:</span>
+          {targetEditing ? (
+            <>
+              <input
+                type="number"
+                value={tempTarget}
+                onChange={(e) => setTempTarget(e.target.value)}
+                style={{
+                  padding: '4px 8px',
+                  border: '1px solid #ccc',
+                  borderRadius: '3px',
+                  fontSize: '13px',
+                  width: '120px'
+                }}
+                placeholder="目標金額"
+              />
+              <button
+                onClick={handleTargetSave}
+                style={{
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  padding: '4px 8px',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                保存
+              </button>
+              <button
+                onClick={handleTargetCancel}
+                style={{
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  padding: '4px 8px',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                キャンセル
+              </button>
+            </>
+          ) : (
+            <>
+              <span style={{ 
+                fontSize: '13px', 
+                fontWeight: 'bold',
+                color: monthlyTarget > 0 ? '#007bff' : '#6c757d'
+              }}>
+                ¥{monthlyTarget.toLocaleString()}
+              </span>
+              <button
+                onClick={handleTargetEdit}
+                style={{
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  padding: '2px 6px',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  fontSize: '11px'
+                }}
+              >
+                編集
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* 進捗表示 */}
+        {monthlyTarget > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
+            <div style={{ textAlign: 'center', padding: '8px', backgroundColor: 'white', borderRadius: '3px' }}>
+              <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>実績売上</div>
+              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#007bff' }}>
+                ¥{progressData.actualSales.toLocaleString()}
+              </div>
+            </div>
+            
+            <div style={{ textAlign: 'center', padding: '8px', backgroundColor: 'white', borderRadius: '3px' }}>
+              <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>達成率</div>
+              <div style={{ 
+                fontSize: '13px', 
+                fontWeight: 'bold',
+                color: progressData.achievementRate >= 100 ? '#28a745' : progressData.achievementRate >= 80 ? '#ffc107' : '#dc3545'
+              }}>
+                {progressData.achievementRate}%
+              </div>
+            </div>
+            
+            <div style={{ textAlign: 'center', padding: '8px', backgroundColor: 'white', borderRadius: '3px' }}>
+              <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>計画進捗率</div>
+              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#6c757d' }}>
+                {progressData.planProgress}%
+              </div>
+              <div style={{ fontSize: '10px', color: '#999' }}>
+                ({progressData.targetDay}/{daysInMonth}日経過)
+              </div>
+            </div>
+            
+            <div style={{ textAlign: 'center', padding: '8px', backgroundColor: 'white', borderRadius: '3px' }}>
+              <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>進捗評価</div>
+              <div style={{ 
+                fontSize: '13px', 
+                fontWeight: 'bold',
+                color: progressData.progressRatio >= 100 ? '#28a745' : progressData.progressRatio >= 80 ? '#ffc107' : '#dc3545'
+              }}>
+                {progressData.progressRatio}%
+              </div>
+              <div style={{ fontSize: '10px', color: '#999' }}>
+                {progressData.progressRatio >= 100 ? '順調' : progressData.progressRatio >= 80 ? '注意' : '遅延'}
+              </div>
+            </div>
           </div>
         )}
       </div>
