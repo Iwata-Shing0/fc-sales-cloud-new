@@ -10,6 +10,12 @@ export default function StorePage() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    router.push('/')
+  }
+
   useEffect(() => {
     if (!id) return
 
@@ -30,10 +36,29 @@ export default function StorePage() {
           
           // 管理者の場合は指定された店舗IDでアクセス
           if (userData.role === 'admin') {
-            setUser({
-              ...userData,
-              store_id: parseInt(id)
+            // 店舗情報を取得
+            const storeResponse = await fetch('/api/stores', {
+              headers: { Authorization: `Bearer ${token}` }
             })
+            
+            if (storeResponse.ok) {
+              const stores = await storeResponse.json()
+              const targetStore = stores.find(store => store.id === parseInt(id))
+              
+              if (targetStore) {
+                setUser({
+                  ...userData,
+                  store_id: parseInt(id),
+                  store_name: targetStore.name
+                })
+              } else {
+                router.push('/')
+                return
+              }
+            } else {
+              router.push('/')
+              return
+            }
           } else if (userData.store_id === parseInt(id)) {
             // 店舗ユーザーの場合は自分の店舗のみアクセス可能
             setUser(userData)
@@ -74,7 +99,7 @@ export default function StorePage() {
       <Head>
         <title>LM売上管理 - 店舗画面</title>
       </Head>
-      <Header user={user} />
+      <Header user={user} onLogout={handleLogout} />
       <main style={{ padding: '20px' }}>
         <StoreDashboard user={user} />
       </main>
