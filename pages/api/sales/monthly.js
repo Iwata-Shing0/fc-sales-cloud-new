@@ -12,86 +12,76 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid updates data' })
     }
 
-    const results = []
+    console.log(`Processing ${updates.length} updates...`)
     
-    for (const update of updates) {
+    // 並列処理でパフォーマンス向上
+    const promises = updates.map(async (update) => {
       const { date, sales_amount, customer_count, store_id, delete: shouldDelete } = update
       
       if (!date || !store_id) {
-        continue
+        return { success: false, error: 'Missing required fields' }
       }
 
-      if (shouldDelete) {
-        // 削除処理
-        const { error } = await supabase
-          .from('sales_data')
-          .delete()
-          .eq('date', date)
-          .eq('store_id', store_id)
-        
-        if (error) {
-          console.error('Delete error:', error)
+      try {
+        if (shouldDelete) {
+          // 削除処理
+          const { error } = await supabase
+            .from('sales_data')
+            .delete()
+            .eq('date', date)
+            .eq('store_id', store_id)
+          
+          return { success: !error, operation: 'delete', date, error }
         }
-        continue
-      }
 
-      const { data: existingData, error: selectError } = await supabase
-        .from('sales_data')
-        .select('*')
-        .eq('date', date)
-        .eq('store_id', store_id)
-        .single()
-
-      if (selectError && selectError.code !== 'PGRST116') {
-        console.error('Select error:', selectError)
-        continue
-      }
-
-      if (existingData) {
+        // Upsert処理で存在チェック不要
         const { data, error } = await supabase
           .from('sales_data')
-          .update({
+          .upsert({
+            date,
             sales_amount: sales_amount || 0,
             customer_count: customer_count || 0,
+            store_id,
             updated_at: new Date()
+          }, {
+            onConflict: 'date,store_id'
           })
-          .eq('date', date)
-          .eq('store_id', store_id)
           .select()
 
-        if (error) {
-          console.error('Update error:', error)
-        } else {
-          results.push(data[0])
+        return { 
+          success: !error, 
+          operation: 'upsert', 
+          date, 
+          data: data?.[0], 
+          error 
         }
-      } else {
-        if (sales_amount > 0 || customer_count > 0) {
-          const { data, error } = await supabase
-            .from('sales_data')
-            .insert([{
-              date,
-              sales_amount: sales_amount || 0,
-              customer_count: customer_count || 0,
-              store_id
-            }])
-            .select()
-
-          if (error) {
-            console.error('Insert error:', error)
-          } else {
-            results.push(data[0])
-          }
-        }
+      } catch (error) {
+        console.error(`Error processing update for ${date}:`, error)
+        return { success: false, date, error: error.message }
       }
-    }
+    })
+
+    // 並列実行（最大10秒以内に完了させる）
+    const results = await Promise.allSettled(promises)
+    
+    const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length
+    const failed = results.length - successful
+    
+    console.log(`Batch update completed: ${successful} successful, ${failed} failed`)
 
     res.status(200).json({ 
       message: 'Monthly data updated successfully',
-      results 
+      successful,
+      failed,
+      total: updates.length,
+      results: results.map(r => r.status === 'fulfilled' ? r.value : { success: false, error: r.reason })
     })
 
   } catch (error) {
     console.error('Monthly update error:', error)
-    res.status(500).json({ error: 'Internal server error' })
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    })
   }
 }
