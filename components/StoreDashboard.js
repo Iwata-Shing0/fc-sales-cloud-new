@@ -789,122 +789,86 @@ export default function StoreDashboard({ user }) {
           )}
         </div>
 
-        {/* 進捗表示 */}
-        {monthlyTarget > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px' }}>
-            <div style={{ textAlign: 'center', padding: '8px', backgroundColor: 'white', borderRadius: '3px' }}>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>実績売上</div>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#007bff' }}>
-                ¥{progressData.actualSales.toLocaleString()}
-              </div>
-            </div>
-            
-            <div style={{ textAlign: 'center', padding: '8px', backgroundColor: 'white', borderRadius: '3px' }}>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>達成率</div>
-              <div style={{ 
-                fontSize: '13px', 
-                fontWeight: 'bold',
-                color: progressData.achievementRate >= 100 ? '#28a745' : progressData.achievementRate >= 80 ? '#ffc107' : '#dc3545'
-              }}>
-                {progressData.achievementRate}%
-              </div>
-            </div>
-            
-            <div style={{ textAlign: 'center', padding: '8px', backgroundColor: 'white', borderRadius: '3px' }}>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>計画進捗率</div>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#6c757d' }}>
-                {progressData.planProgress}%
-              </div>
-              <div style={{ fontSize: '10px', color: '#999' }}>
-                (入力: {progressData.targetDay}/{daysInMonth}日)
-              </div>
-            </div>
-            
-            <div style={{ textAlign: 'center', padding: '8px', backgroundColor: 'white', borderRadius: '3px' }}>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>日平均売上</div>
-              <div style={{ 
-                fontSize: '13px', 
-                fontWeight: 'bold',
-                color: '#007bff'
-              }}>
-                ¥{progressData.businessDays > 0 ? Math.round(progressData.actualSales / progressData.businessDays).toLocaleString() : '0'}
-              </div>
-            </div>
-            
-            <div style={{ textAlign: 'center', padding: '8px', backgroundColor: 'white', borderRadius: '3px' }}>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>日平均客数</div>
-              <div style={{ 
-                fontSize: '13px', 
-                fontWeight: 'bold',
-                color: '#28a745'
-              }}>
-                {progressData.businessDays > 0 ? Math.round(progressData.actualCustomers / progressData.businessDays) : 0}人
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      <div style={{ overflowX: 'auto', marginBottom: '10px' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        marginBottom: '20px' 
+      }}>
         <table style={{ 
-          width: '100%', 
           borderCollapse: 'collapse', 
-          minWidth: '320px',
-          fontSize: '12px'
+          fontSize: '12px',
+          margin: '0 auto',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          borderRadius: '6px',
+          overflow: 'hidden'
         }}>
           <thead>
             <tr style={{ backgroundColor: '#f8f9fa' }}>
               <th style={{ 
-                padding: '8px 4px', 
+                padding: '8px 6px', 
                 border: '1px solid #dee2e6', 
                 textAlign: 'center', 
                 width: '30px',
-                fontSize: '11px'
+                fontSize: '12px',
+                fontWeight: 'bold',
+                backgroundColor: '#f8f9fa'
               }}>
                 選択
               </th>
               <th style={{ 
-                padding: '8px 4px', 
+                padding: '8px 6px', 
                 border: '1px solid #dee2e6', 
                 textAlign: 'center', 
-                width: '50px',
-                fontSize: '11px'
+                width: '70px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                backgroundColor: '#f8f9fa'
               }}>
                 日付
               </th>
               <th style={{ 
-                padding: '8px 4px', 
+                padding: '8px 6px', 
                 border: '1px solid #dee2e6', 
                 textAlign: 'center', 
-                width: '70px',
-                fontSize: '11px'
+                width: '110px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                backgroundColor: '#f8f9fa'
               }}>
                 売上(税込)
               </th>
               <th style={{ 
-                padding: '8px 4px', 
+                padding: '8px 6px', 
                 border: '1px solid #dee2e6', 
                 textAlign: 'center', 
-                width: '50px',
-                fontSize: '11px'
+                width: '60px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                backgroundColor: '#f8f9fa'
               }}>
                 客数
               </th>
               <th style={{ 
-                padding: '8px 4px', 
+                padding: '8px 6px', 
                 border: '1px solid #dee2e6', 
                 textAlign: 'center', 
-                width: '70px',
-                fontSize: '11px'
+                width: '110px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                backgroundColor: '#f8f9fa'
               }}>
                 売上(税抜)
               </th>
               <th style={{ 
-                padding: '8px 4px', 
+                padding: '8px 6px', 
                 border: '1px solid #dee2e6', 
                 textAlign: 'center', 
-                width: '70px',
-                fontSize: '11px'
+                width: '110px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                backgroundColor: '#f8f9fa'
               }}>
                 平均客単価
               </th>
@@ -921,35 +885,38 @@ export default function StoreDashboard({ user }) {
               return (
                 <tr key={day}>
                   <td style={{ 
-                    padding: '6px 2px', 
+                    padding: '4px', 
                     border: '1px solid #dee2e6', 
                     textAlign: 'center',
-                    width: '30px'
+                    width: '30px',
+                    backgroundColor: '#fafafa'
                   }}>
                     <input
                       type="checkbox"
                       checked={selectedDays.has(day)}
                       onChange={(e) => handleCheckboxChange(day, e.target.checked)}
                       style={{
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        transform: 'scale(1.1)'
                       }}
                     />
                   </td>
                   <td style={{ 
-                    padding: '6px 2px', 
+                    padding: '6px 4px', 
                     border: '1px solid #dee2e6', 
                     textAlign: 'center',
                     fontWeight: 'bold',
                     color: dayColor,
-                    width: '50px',
-                    fontSize: '11px'
+                    width: '70px',
+                    fontSize: '11px',
+                    backgroundColor: '#fafafa'
                   }}>
                     {day}({dayName})
                   </td>
                   <td style={{ 
-                    padding: '3px', 
+                    padding: '4px', 
                     border: '1px solid #dee2e6', 
-                    width: '70px'
+                    width: '110px'
                   }}>
                     <input
                       type="number"
@@ -957,20 +924,25 @@ export default function StoreDashboard({ user }) {
                       onChange={(e) => handleInputChange(day, 'sales_amount', e.target.value)}
                       style={{
                         width: '100%',
-                        padding: '4px',
-                        border: '1px solid #ccc',
-                        borderRadius: '2px',
+                        padding: '4px 6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '3px',
                         textAlign: 'right',
-                        fontSize: '11px'
+                        fontSize: '12px',
+                        backgroundColor: '#fff',
+                        outline: 'none',
+                        transition: 'border-color 0.2s'
                       }}
                       placeholder=""
                       min="0"
+                      onFocus={(e) => e.target.style.borderColor = '#007bff'}
+                      onBlur={(e) => e.target.style.borderColor = '#ddd'}
                     />
                   </td>
                   <td style={{ 
-                    padding: '3px', 
+                    padding: '4px', 
                     border: '1px solid #dee2e6', 
-                    width: '50px'
+                    width: '60px'
                   }}>
                     <input
                       type="number"
@@ -978,33 +950,40 @@ export default function StoreDashboard({ user }) {
                       onChange={(e) => handleInputChange(day, 'customer_count', e.target.value)}
                       style={{
                         width: '100%',
-                        padding: '4px',
-                        border: '1px solid #ccc',
-                        borderRadius: '2px',
+                        padding: '4px 6px',
+                        border: '1px solid #ddd',
+                        borderRadius: '3px',
                         textAlign: 'right',
-                        fontSize: '11px'
+                        fontSize: '12px',
+                        backgroundColor: '#fff',
+                        outline: 'none',
+                        transition: 'border-color 0.2s'
                       }}
                       placeholder=""
                       min="0"
+                      onFocus={(e) => e.target.style.borderColor = '#007bff'}
+                      onBlur={(e) => e.target.style.borderColor = '#ddd'}
                     />
                   </td>
                   <td style={{ 
-                    padding: '6px 4px', 
+                    padding: '6px 8px', 
                     border: '1px solid #dee2e6', 
                     textAlign: 'right',
                     backgroundColor: '#f8f9fa',
-                    width: '70px',
-                    fontSize: '11px'
+                    width: '110px',
+                    fontSize: '11px',
+                    fontWeight: '500'
                   }}>
                     {exTaxAmount > 0 ? `¥${exTaxAmount.toLocaleString()}` : ''}
                   </td>
                   <td style={{ 
-                    padding: '6px 4px', 
+                    padding: '6px 8px', 
                     border: '1px solid #dee2e6', 
                     textAlign: 'right',
                     backgroundColor: '#f8f9fa',
-                    width: '70px',
-                    fontSize: '11px'
+                    width: '110px',
+                    fontSize: '11px',
+                    fontWeight: '500'
                   }}>
                     {avgPrice > 0 ? `¥${avgPrice.toLocaleString()}` : ''}
                   </td>
