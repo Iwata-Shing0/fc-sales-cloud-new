@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 
 const AdminDashboard = forwardRef(({ user }, ref) => {
-  const [activeTab, setActiveTab] = useState('stores')
   const [stores, setStores] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
@@ -16,8 +15,6 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
     password: ''
   })
   const [message, setMessage] = useState('')
-  const [salesRanking, setSalesRanking] = useState([])
-  const [loadingRanking, setLoadingRanking] = useState(false)
   const [csvLoading, setCsvLoading] = useState(false)
   const [selectedStore, setSelectedStore] = useState('')
   const [selectedStoreData, setSelectedStoreData] = useState(null)
@@ -46,10 +43,8 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
   useEffect(() => {
     fetchStores()
     fetchStatistics()
-    if (activeTab === 'ranking') {
-      fetchSalesRanking()
-    }
-  }, [activeTab, currentDate])
+  }, [currentDate])
+
 
   const fetchStores = async () => {
     try {
@@ -182,25 +177,6 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
     setCurrentDate(newDate)
   }
 
-  const fetchSalesRanking = async () => {
-    setLoadingRanking(true)
-    try {
-      const token = localStorage.getItem('token')
-      
-      const response = await fetch(`/api/sales/monthly/${currentYear}/${currentMonth}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setSalesRanking(data)
-      }
-    } catch (error) {
-      console.error('売上ランキング取得エラー:', error)
-    } finally {
-      setLoadingRanking(false)
-    }
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -415,19 +391,18 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
     }
   }
 
-  const handleRankingCsvDownload = async () => {
+  const handleStoreCsvDownload = async () => {
     try {
-      // CSV形式のデータを作成（6つのフィールド対応）
-      const csvHeader = 'ランキング,店舗名,売上(税込),売上(税抜),客単価,営業日数,日平均(税込),日平均(税抜)\n'
-      const csvData = salesRanking.map((store, index) => {
-        const ranking = index + 1
-        const taxInclusiveSales = store.total_sales
-        const taxExclusiveSales = Math.round(store.total_sales / 1.1)
-        const avgCustomerPrice = store.total_customers > 0 ? Math.round(store.total_sales / store.total_customers) : 0
-        const avgDailyTaxInclusive = Math.round(store.avg_daily_sales)
-        const avgDailyTaxExclusive = Math.round(store.avg_daily_sales / 1.1)
+      // CSV形式のデータを作成
+      const csvHeader = '店舗名,店舗コード,売上(税込),客数,客単価\n'
+      const csvData = storesWithSales.map((store) => {
+        const storeName = store.name
+        const storeCode = store.store_code
+        const sales = store.totalSales || 0
+        const customers = store.totalCustomers || 0
+        const avgPrice = store.avgCustomerPrice || 0
         
-        return `${ranking},${store.store_name},${taxInclusiveSales},${taxExclusiveSales},${avgCustomerPrice},${store.days_count},${avgDailyTaxInclusive},${avgDailyTaxExclusive}`
+        return `${storeName},${storeCode},${sales},${customers},${avgPrice}`
       }).join('\n')
       
       const csvContent = csvHeader + csvData
@@ -438,13 +413,13 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `売上ランキング_${currentYear}年${currentMonth}月.csv`
+      a.download = `店舗売上データ_${currentYear}年${currentMonth}月.csv`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       window.URL.revokeObjectURL(url)
       
-      setMessage('売上ランキングCSVをダウンロードしました')
+      setMessage('店舗売上データCSVをダウンロードしました')
     } catch (error) {
       setMessage('CSVダウンロード中にエラーが発生しました')
     }
@@ -709,28 +684,21 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-        <button
-          className={`btn ${activeTab === 'stores' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setActiveTab('stores')}
-        >
-          店舗管理
-        </button>
-        <button
-          className={`btn ${activeTab === 'ranking' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setActiveTab('ranking')}
-        >
-          売上ランキング
-        </button>
-      </div>
-
-      {activeTab === 'stores' && (
-        <div className="card">
+      <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h2>店舗管理</h2>
-            <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-              新規店舗作成
-            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                className="btn btn-secondary"
+                onClick={handleStoreCsvDownload}
+                style={{ fontSize: '14px', padding: '8px 16px' }}
+              >
+                CSV出力
+              </button>
+              <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                新規店舗作成
+              </button>
+            </div>
           </div>
 
           {message && (
@@ -748,12 +716,6 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
               <tr style={{ backgroundColor: '#f8f9fa' }}>
                 <th 
                   style={{ cursor: 'pointer', padding: '8px', border: '1px solid #dee2e6' }}
-                  onClick={() => handleSort('id')}
-                >
-                  店舗ID{getSortIcon('id')}
-                </th>
-                <th 
-                  style={{ cursor: 'pointer', padding: '8px', border: '1px solid #dee2e6' }}
                   onClick={() => handleSort('name')}
                 >
                   店舗名{getSortIcon('name')}
@@ -768,25 +730,19 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
                   style={{ cursor: 'pointer', padding: '8px', border: '1px solid #dee2e6' }}
                   onClick={() => handleSort('totalSales')}
                 >
-                  今月売上{getSortIcon('totalSales')}
+                  売上(税込){getSortIcon('totalSales')}
                 </th>
                 <th 
                   style={{ cursor: 'pointer', padding: '8px', border: '1px solid #dee2e6' }}
                   onClick={() => handleSort('totalCustomers')}
                 >
-                  今月客数{getSortIcon('totalCustomers')}
+                  客数{getSortIcon('totalCustomers')}
                 </th>
                 <th 
                   style={{ cursor: 'pointer', padding: '8px', border: '1px solid #dee2e6' }}
                   onClick={() => handleSort('avgCustomerPrice')}
                 >
-                  平均客単価{getSortIcon('avgCustomerPrice')}
-                </th>
-                <th 
-                  style={{ cursor: 'pointer', padding: '8px', border: '1px solid #dee2e6' }}
-                  onClick={() => handleSort('created_at')}
-                >
-                  作成日{getSortIcon('created_at')}
+                  客単価{getSortIcon('avgCustomerPrice')}
                 </th>
                 <th style={{ padding: '8px', border: '1px solid #dee2e6' }}>
                   操作
@@ -796,9 +752,6 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
             <tbody>
               {getSortedStores().map(store => (
                 <tr key={store.id}>
-                  <td style={{ padding: '8px', border: '1px solid #dee2e6' }}>
-                    {store.id}
-                  </td>
                   <td style={{ padding: '8px', border: '1px solid #dee2e6' }}>
                     <span 
                       onClick={() => handleStoreNameClick(store.id)}
@@ -822,9 +775,6 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
                   </td>
                   <td style={{ padding: '8px', border: '1px solid #dee2e6', textAlign: 'right' }}>
                     {formatCurrency(store.avgCustomerPrice || 0)}
-                  </td>
-                  <td style={{ padding: '8px', border: '1px solid #dee2e6' }}>
-                    {store.created_at ? new Date(store.created_at).toLocaleDateString('ja-JP') : '-'}
                   </td>
                   <td style={{ padding: '8px', border: '1px solid #dee2e6' }}>
                     <button
@@ -880,95 +830,7 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
             </small>
           </div>
         </div>
-      )}
 
-      {activeTab === 'ranking' && (
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2>売上ランキング - {currentYear}年{currentMonth}月</h2>
-            {salesRanking.length > 0 && (
-              <button 
-                className="btn btn-secondary"
-                onClick={handleRankingCsvDownload}
-                style={{ fontSize: '14px', padding: '8px 16px' }}
-              >
-                CSV出力
-              </button>
-            )}
-          </div>
-          {loadingRanking ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>読み込み中...</div>
-          ) : (
-            <>
-              {salesRanking.length > 0 ? (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
-                    <thead>
-                      <tr style={{ backgroundColor: '#f8f9fa' }}>
-                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center' }}>順位</th>
-                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'left' }}>店舗名</th>
-                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>売上(税込)</th>
-                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>売上(税抜)</th>
-                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>客単価</th>
-                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>営業日数</th>
-                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>日平均(税込)</th>
-                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>日平均(税抜)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {salesRanking.map((store, index) => (
-                        <tr key={store.store_id} style={{ backgroundColor: index < 3 ? '#fff3cd' : 'transparent' }}>
-                          <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center', fontWeight: 'bold' }}>
-                            {index + 1}
-                            {index === 0 && '🥇'}
-                            {index === 1 && '🥈'}
-                            {index === 2 && '🥉'}
-                          </td>
-                          <td style={{ padding: '12px', border: '1px solid #dee2e6', fontWeight: 'bold' }}>
-                            <span 
-                              onClick={() => handleStoreNameClick(store.store_id)}
-                              style={{ 
-                                cursor: 'pointer', 
-                                textDecoration: 'underline',
-                                color: '#007bff'
-                              }}
-                            >
-                              {store.store_name}
-                            </span>
-                          </td>
-                          <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right', fontWeight: 'bold' }}>
-                            {formatCurrency(store.total_sales)}
-                          </td>
-                          <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>
-                            {formatCurrency(Math.round(store.total_sales / 1.1))}
-                          </td>
-                          <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>
-                            {store.total_customers > 0 ? formatCurrency(Math.round(store.total_sales / store.total_customers)) : '¥0'}
-                          </td>
-                          <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>
-                            {store.days_count}日
-                          </td>
-                          <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>
-                            {formatCurrency(Math.round(store.avg_daily_sales))}
-                          </td>
-                          <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>
-                            {formatCurrency(Math.round(store.avg_daily_sales / 1.1))}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <p>売上データがありません。</p>
-                  <p>店舗から売上データを入力してください。</p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
 
       {/* 設定モーダル */}
       {showSettingsModal && (
