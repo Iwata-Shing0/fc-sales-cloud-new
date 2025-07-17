@@ -375,9 +375,9 @@ export default function StoreDashboard({ user }) {
   }
 
   const getDayColor = (dayOfWeek) => {
-    if (dayOfWeek === 0) return '#ff6b6b' // 日曜日：モダンな赤
-    if (dayOfWeek === 6) return '#4dabf7' // 土曜日：モダンな青
-    return '#495057' // 平日：ダークグレー
+    if (dayOfWeek === 0) return '#dc3545' // 日曜日：赤
+    if (dayOfWeek === 6) return '#007bff' // 土曜日：青
+    return '#495057' // 平日：グレー
   }
 
   const handleCsvUpload = async (event) => {
@@ -496,179 +496,161 @@ export default function StoreDashboard({ user }) {
   return (
     <div style={{ 
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      backgroundColor: '#f8f9fa',
       padding: '10px'
     }}>
       {/* メインコンテナ */}
       <div style={{
-        background: 'rgba(255,255,255,0.95)',
-        borderRadius: '20px',
-        padding: '20px',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-        backdropFilter: 'blur(10px)'
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        padding: '15px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}>
         {/* タブナビゲーション */}
         <div style={{ 
           display: 'flex', 
-          gap: '8px', 
-          marginBottom: '20px',
-          background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-          padding: '8px',
-          borderRadius: '12px',
-          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+          gap: '4px', 
+          marginBottom: '15px',
+          backgroundColor: '#f8f9fa',
+          padding: '4px',
+          borderRadius: '6px'
         }}>
           <button
             onClick={() => setActiveTab('daily')}
             style={{
               flex: 1,
-              padding: '12px 16px',
+              padding: '8px 12px',
               border: 'none',
-              borderRadius: '8px',
-              background: activeTab === 'daily' 
-                ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                : 'transparent',
-              color: activeTab === 'daily' ? 'white' : '#667eea',
-              fontSize: '14px',
-              fontWeight: 'bold',
+              borderRadius: '4px',
+              backgroundColor: activeTab === 'daily' ? '#007bff' : 'transparent',
+              color: activeTab === 'daily' ? 'white' : '#007bff',
+              fontSize: '13px',
+              fontWeight: '500',
               cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              boxShadow: activeTab === 'daily' ? '0 4px 15px rgba(102, 126, 234, 0.4)' : 'none'
+              transition: 'all 0.2s ease'
             }}
           >
-            📊 日次入力
+            日次入力
           </button>
           <button
             onClick={() => setActiveTab('analytics')}
             style={{
               flex: 1,
-              padding: '12px 16px',
+              padding: '8px 12px',
               border: 'none',
-              borderRadius: '8px',
-              background: activeTab === 'analytics' 
-                ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                : 'transparent',
-              color: activeTab === 'analytics' ? 'white' : '#667eea',
-              fontSize: '14px',
-              fontWeight: 'bold',
+              borderRadius: '4px',
+              backgroundColor: activeTab === 'analytics' ? '#007bff' : 'transparent',
+              color: activeTab === 'analytics' ? 'white' : '#007bff',
+              fontSize: '13px',
+              fontWeight: '500',
               cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              boxShadow: activeTab === 'analytics' ? '0 4px 15px rgba(102, 126, 234, 0.4)' : 'none'
+              transition: 'all 0.2s ease'
             }}
           >
-            📈 売上分析
+            売上分析
           </button>
         </div>
 
         {/* ヘッダーセクション */}
         <div style={{ 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          backgroundColor: '#007bff',
           color: 'white',
-          borderRadius: '16px',
-          padding: '20px',
-          marginBottom: '20px',
-          boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)'
+          borderRadius: '6px',
+          padding: '12px',
+          marginBottom: '15px'
         }}>
-          <div style={{ textAlign: 'center', fontSize: '20px', marginBottom: '15px', fontWeight: 'bold' }}>
-            🏪 {user.store_name}
+          <div style={{ textAlign: 'center', fontSize: '16px', marginBottom: '10px', fontWeight: '600' }}>
+            {user.store_name}
           </div>
           
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
             <button 
               onClick={() => changeMonth(-1)}
               style={{
-                background: 'rgba(255,255,255,0.2)',
+                backgroundColor: 'rgba(255,255,255,0.2)',
                 color: 'white',
                 border: 'none',
-                padding: '10px 16px',
-                borderRadius: '8px',
+                padding: '6px 12px',
+                borderRadius: '4px',
                 cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                transition: 'all 0.3s ease'
+                fontSize: '12px',
+                fontWeight: '500'
               }}
-              onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
-              onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
             >
               ← 前月
             </button>
             
-            <h3 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
-              📅 {currentYear}年{currentMonth}月
+            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
+              {currentYear}年{currentMonth}月
             </h3>
             
             <button 
               onClick={() => changeMonth(1)}
               style={{
-                background: 'rgba(255,255,255,0.2)',
+                backgroundColor: 'rgba(255,255,255,0.2)',
                 color: 'white',
                 border: 'none',
-                padding: '10px 16px',
-                borderRadius: '8px',
+                padding: '6px 12px',
+                borderRadius: '4px',
                 cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                transition: 'all 0.3s ease'
+                fontSize: '12px',
+                fontWeight: '500'
               }}
-              onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
-              onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
             >
               次月 →
             </button>
           </div>
 
           {/* アクションボタン */}
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
               onClick={handleUpdateMonth}
               disabled={loading}
               style={{
-                background: loading ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.2)',
+                backgroundColor: loading ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.2)',
                 color: 'white',
                 border: 'none',
-                padding: '10px 16px',
-                borderRadius: '8px',
+                padding: '6px 12px',
+                borderRadius: '4px',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                transition: 'all 0.3s ease'
+                fontSize: '11px',
+                fontWeight: '500'
               }}
             >
-              {loading ? '⏳ 更新中...' : '💾 更新'}
+              {loading ? '更新中...' : '更新'}
             </button>
 
             <button
               onClick={handleDeleteSelected}
               disabled={deleteLoading || selectedDays.size === 0}
               style={{
-                background: (deleteLoading || selectedDays.size === 0) ? 'rgba(255,255,255,0.3)' : 'rgba(220, 53, 69, 0.8)',
+                backgroundColor: (deleteLoading || selectedDays.size === 0) ? 'rgba(255,255,255,0.3)' : '#dc3545',
                 color: 'white',
                 border: 'none',
-                padding: '10px 16px',
-                borderRadius: '8px',
+                padding: '6px 12px',
+                borderRadius: '4px',
                 cursor: (deleteLoading || selectedDays.size === 0) ? 'not-allowed' : 'pointer',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                transition: 'all 0.3s ease'
+                fontSize: '11px',
+                fontWeight: '500'
               }}
             >
-              {deleteLoading ? '🗑️ 削除中...' : `🗑️ 選択削除${selectedDays.size > 0 ? `(${selectedDays.size}件)` : ''}`}
+              {deleteLoading ? '削除中...' : `選択削除${selectedDays.size > 0 ? `(${selectedDays.size}件)` : ''}`}
             </button>
 
             <button
               onClick={() => window.open('https://lm-order.com', '_blank')}
               style={{
-                background: 'rgba(40, 167, 69, 0.8)',
+                backgroundColor: '#28a745',
                 color: 'white',
                 border: 'none',
-                padding: '10px 16px',
-                borderRadius: '8px',
+                padding: '6px 12px',
+                borderRadius: '4px',
                 cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                transition: 'all 0.3s ease'
+                fontSize: '11px',
+                fontWeight: '500'
               }}
             >
-              🛒 LUIDA注文
+              LUIDA注文
             </button>
 
             <input
@@ -682,52 +664,49 @@ export default function StoreDashboard({ user }) {
               onClick={() => fileInputRef.current?.click()}
               disabled={csvLoading}
               style={{
-                background: csvLoading ? 'rgba(255,255,255,0.3)' : 'rgba(255, 193, 7, 0.8)',
+                backgroundColor: csvLoading ? 'rgba(255,255,255,0.3)' : '#ffc107',
                 color: csvLoading ? 'white' : '#212529',
                 border: 'none',
-                padding: '10px 16px',
-                borderRadius: '8px',
+                padding: '6px 12px',
+                borderRadius: '4px',
                 cursor: csvLoading ? 'not-allowed' : 'pointer',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                transition: 'all 0.3s ease'
+                fontSize: '11px',
+                fontWeight: '500'
               }}
               title="CSV形式: 日付,税込売上,客数"
             >
-              {csvLoading ? '📤 アップロード中...' : '📤 CSV取込'}
+              {csvLoading ? 'アップロード中...' : 'CSV取込'}
             </button>
 
             <button
               onClick={handleCsvDownload}
               style={{
-                background: 'rgba(108, 117, 125, 0.8)',
+                backgroundColor: '#6c757d',
                 color: 'white',
                 border: 'none',
-                padding: '10px 16px',
-                borderRadius: '8px',
+                padding: '6px 12px',
+                borderRadius: '4px',
                 cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                transition: 'all 0.3s ease'
+                fontSize: '11px',
+                fontWeight: '500'
               }}
             >
-              📥 CSV出力
+              CSV出力
             </button>
           </div>
 
           {message && (
             <div style={{
-              marginTop: '15px',
-              padding: '12px',
-              background: message.includes('エラー') 
+              marginTop: '10px',
+              padding: '8px',
+              backgroundColor: message.includes('エラー') 
                 ? 'rgba(248, 215, 218, 0.9)' 
                 : 'rgba(212, 237, 218, 0.9)',
-              border: `2px solid ${message.includes('エラー') ? '#f5c6cb' : '#c3e6cb'}`,
-              borderRadius: '8px',
+              border: `1px solid ${message.includes('エラー') ? '#f5c6cb' : '#c3e6cb'}`,
+              borderRadius: '4px',
               color: message.includes('エラー') ? '#721c24' : '#155724',
               textAlign: 'center',
-              fontSize: '13px',
-              fontWeight: '500'
+              fontSize: '12px'
             }}>
               {message}
             </div>
@@ -736,24 +715,24 @@ export default function StoreDashboard({ user }) {
 
         {/* 目標売上設定 */}
         <div style={{
-          background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-          padding: '20px',
-          borderRadius: '16px',
-          marginBottom: '20px',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+          backgroundColor: '#f8f9fa',
+          padding: '12px',
+          borderRadius: '6px',
+          marginBottom: '15px',
+          border: '1px solid #dee2e6'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#495057' }}>🎯 目標売上・進捗管理</h4>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#495057' }}>目標売上・進捗管理</h4>
           </div>
 
           <div style={{ 
             display: 'flex', 
             alignItems: 'center', 
-            gap: '15px', 
-            marginBottom: '20px',
+            gap: '10px', 
+            marginBottom: '12px',
             flexWrap: 'wrap'
           }}>
-            <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#495057' }}>目標売上:</span>
+            <span style={{ fontSize: '13px', fontWeight: '500', color: '#495057' }}>目標売上:</span>
             {targetEditing ? (
               <>
                 <input
@@ -761,75 +740,69 @@ export default function StoreDashboard({ user }) {
                   value={tempTarget}
                   onChange={(e) => setTempTarget(e.target.value)}
                   style={{
-                    padding: '8px 12px',
-                    border: '2px solid #dee2e6',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    width: '150px',
-                    outline: 'none',
-                    transition: 'border-color 0.3s ease'
+                    padding: '6px 8px',
+                    border: '1px solid #ced4da',
+                    borderRadius: '4px',
+                    fontSize: '13px',
+                    width: '120px',
+                    outline: 'none'
                   }}
                   placeholder="目標金額"
-                  onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                  onBlur={(e) => e.target.style.borderColor = '#dee2e6'}
                 />
                 <button
                   onClick={handleTargetSave}
                   style={{
-                    background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                    backgroundColor: '#28a745',
                     color: 'white',
                     border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '8px',
+                    padding: '6px 12px',
+                    borderRadius: '4px',
                     cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: 'bold',
-                    transition: 'all 0.3s ease'
+                    fontSize: '12px',
+                    fontWeight: '500'
                   }}
                 >
-                  ✅ 保存
+                  保存
                 </button>
                 <button
                   onClick={handleTargetCancel}
                   style={{
-                    background: 'linear-gradient(135deg, #6c757d 0%, #495057 100%)',
+                    backgroundColor: '#6c757d',
                     color: 'white',
                     border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '8px',
+                    padding: '6px 12px',
+                    borderRadius: '4px',
                     cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: 'bold',
-                    transition: 'all 0.3s ease'
+                    fontSize: '12px',
+                    fontWeight: '500'
                   }}
                 >
-                  ❌ キャンセル
+                  キャンセル
                 </button>
               </>
             ) : (
               <>
                 <span style={{ 
-                  fontSize: '16px', 
-                  fontWeight: 'bold',
-                  color: monthlyTarget > 0 ? '#667eea' : '#6c757d'
+                  fontSize: '14px', 
+                  fontWeight: '600',
+                  color: monthlyTarget > 0 ? '#007bff' : '#6c757d'
                 }}>
                   ¥{monthlyTarget.toLocaleString()}
                 </span>
                 <button
                   onClick={handleTargetEdit}
                   style={{
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    backgroundColor: '#007bff',
                     color: 'white',
                     border: 'none',
-                    padding: '6px 12px',
-                    borderRadius: '6px',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
                     cursor: 'pointer',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    transition: 'all 0.3s ease'
+                    fontSize: '11px',
+                    fontWeight: '500'
                   }}
                 >
-                  ✏️ 編集
+                  編集
                 </button>
               </>
             )}
@@ -839,183 +812,97 @@ export default function StoreDashboard({ user }) {
           {monthlyTarget > 0 && (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: '12px',
-              marginBottom: '0px'
+              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+              gap: '8px'
             }}>
               {/* 売上合計 */}
               <div style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                padding: '16px',
-                borderRadius: '12px',
-                boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
-                position: 'relative',
-                overflow: 'hidden'
+                backgroundColor: 'white',
+                border: '1px solid #dee2e6',
+                padding: '10px',
+                borderRadius: '4px',
+                textAlign: 'center'
               }}>
-                <div style={{
-                  position: 'absolute',
-                  top: '-10px',
-                  right: '-10px',
-                  width: '40px',
-                  height: '40px',
-                  background: 'rgba(255,255,255,0.1)',
-                  borderRadius: '50%'
-                }}></div>
-                <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '4px' }}>売上合計</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
+                <div style={{ fontSize: '10px', color: '#6c757d', marginBottom: '2px' }}>売上合計</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#007bff' }}>
                   ¥{progressData.actualSales.toLocaleString()}
-                </div>
-                <div style={{ fontSize: '10px', opacity: 0.8 }}>
-                  📊 月次売上実績
                 </div>
               </div>
 
               {/* 客数合計 */}
               <div style={{
-                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                color: 'white',
-                padding: '16px',
-                borderRadius: '12px',
-                boxShadow: '0 4px 15px rgba(240, 147, 251, 0.4)',
-                position: 'relative',
-                overflow: 'hidden'
+                backgroundColor: 'white',
+                border: '1px solid #dee2e6',
+                padding: '10px',
+                borderRadius: '4px',
+                textAlign: 'center'
               }}>
-                <div style={{
-                  position: 'absolute',
-                  top: '-10px',
-                  right: '-10px',
-                  width: '40px',
-                  height: '40px',
-                  background: 'rgba(255,255,255,0.1)',
-                  borderRadius: '50%'
-                }}></div>
-                <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '4px' }}>客数合計</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
+                <div style={{ fontSize: '10px', color: '#6c757d', marginBottom: '2px' }}>客数合計</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#007bff' }}>
                   {progressData.actualCustomers.toLocaleString()}人
-                </div>
-                <div style={{ fontSize: '10px', opacity: 0.8 }}>
-                  👥 月次来客実績
                 </div>
               </div>
 
               {/* 達成率 */}
               <div style={{
-                background: progressData.achievementRate >= 100 
-                  ? 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
-                  : progressData.achievementRate >= 80
-                  ? 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'
-                  : 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                color: 'white',
-                padding: '16px',
-                borderRadius: '12px',
-                boxShadow: progressData.achievementRate >= 100
-                  ? '0 4px 15px rgba(79, 172, 254, 0.4)'
-                  : progressData.achievementRate >= 80
-                  ? '0 4px 15px rgba(67, 233, 123, 0.4)'
-                  : '0 4px 15px rgba(250, 112, 154, 0.4)',
-                position: 'relative',
-                overflow: 'hidden'
+                backgroundColor: 'white',
+                border: '1px solid #dee2e6',
+                padding: '10px',
+                borderRadius: '4px',
+                textAlign: 'center'
               }}>
-                <div style={{
-                  position: 'absolute',
-                  top: '-10px',
-                  right: '-10px',
-                  width: '40px',
-                  height: '40px',
-                  background: 'rgba(255,255,255,0.1)',
-                  borderRadius: '50%'
-                }}></div>
-                <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '4px' }}>達成率</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
+                <div style={{ fontSize: '10px', color: '#6c757d', marginBottom: '2px' }}>達成率</div>
+                <div style={{ 
+                  fontSize: '14px', 
+                  fontWeight: '600',
+                  color: progressData.achievementRate >= 100 ? '#28a745' : progressData.achievementRate >= 80 ? '#ffc107' : '#dc3545'
+                }}>
                   {progressData.achievementRate.toFixed(1)}%
-                </div>
-                <div style={{ fontSize: '10px', opacity: 0.8 }}>
-                  🎯 目標対比
                 </div>
               </div>
 
               {/* 計画進捗率 */}
               <div style={{
-                background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                color: '#2d3748',
-                padding: '16px',
-                borderRadius: '12px',
-                boxShadow: '0 4px 15px rgba(168, 237, 234, 0.4)',
-                position: 'relative',
-                overflow: 'hidden'
+                backgroundColor: 'white',
+                border: '1px solid #dee2e6',
+                padding: '10px',
+                borderRadius: '4px',
+                textAlign: 'center'
               }}>
-                <div style={{
-                  position: 'absolute',
-                  top: '-10px',
-                  right: '-10px',
-                  width: '40px',
-                  height: '40px',
-                  background: 'rgba(255,255,255,0.3)',
-                  borderRadius: '50%'
-                }}></div>
-                <div style={{ fontSize: '11px', opacity: 0.8, marginBottom: '4px' }}>計画進捗率</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
+                <div style={{ fontSize: '10px', color: '#6c757d', marginBottom: '2px' }}>計画進捗率</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#6c757d' }}>
                   {progressData.planProgress.toFixed(1)}%
                 </div>
-                <div style={{ fontSize: '10px', opacity: 0.7 }}>
-                  📅 {progressData.targetDay}/{daysInMonth}日
+                <div style={{ fontSize: '9px', color: '#adb5bd' }}>
+                  ({progressData.targetDay}/{daysInMonth}日)
                 </div>
               </div>
 
               {/* 日平均売上 */}
               <div style={{
-                background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-                color: '#2d3748',
-                padding: '16px',
-                borderRadius: '12px',
-                boxShadow: '0 4px 15px rgba(255, 236, 210, 0.6)',
-                position: 'relative',
-                overflow: 'hidden'
+                backgroundColor: 'white',
+                border: '1px solid #dee2e6',
+                padding: '10px',
+                borderRadius: '4px',
+                textAlign: 'center'
               }}>
-                <div style={{
-                  position: 'absolute',
-                  top: '-10px',
-                  right: '-10px',
-                  width: '40px',
-                  height: '40px',
-                  background: 'rgba(255,255,255,0.3)',
-                  borderRadius: '50%'
-                }}></div>
-                <div style={{ fontSize: '11px', opacity: 0.8, marginBottom: '4px' }}>日平均売上</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
+                <div style={{ fontSize: '10px', color: '#6c757d', marginBottom: '2px' }}>日平均売上</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#007bff' }}>
                   ¥{progressData.businessDays > 0 ? Math.round(progressData.actualSales / progressData.businessDays).toLocaleString() : '0'}
-                </div>
-                <div style={{ fontSize: '10px', opacity: 0.7 }}>
-                  💰 営業日平均
                 </div>
               </div>
 
               {/* 日平均客数 */}
               <div style={{
-                background: 'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)',
-                color: '#2d3748',
-                padding: '16px',
-                borderRadius: '12px',
-                boxShadow: '0 4px 15px rgba(210, 153, 194, 0.4)',
-                position: 'relative',
-                overflow: 'hidden'
+                backgroundColor: 'white',
+                border: '1px solid #dee2e6',
+                padding: '10px',
+                borderRadius: '4px',
+                textAlign: 'center'
               }}>
-                <div style={{
-                  position: 'absolute',
-                  top: '-10px',
-                  right: '-10px',
-                  width: '40px',
-                  height: '40px',
-                  background: 'rgba(255,255,255,0.3)',
-                  borderRadius: '50%'
-                }}></div>
-                <div style={{ fontSize: '11px', opacity: 0.8, marginBottom: '4px' }}>日平均客数</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
+                <div style={{ fontSize: '10px', color: '#6c757d', marginBottom: '2px' }}>日平均客数</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#007bff' }}>
                   {progressData.businessDays > 0 ? Math.round(progressData.actualCustomers / progressData.businessDays) : 0}人
-                </div>
-                <div style={{ fontSize: '10px', opacity: 0.7 }}>
-                  🙋‍♂️ 営業日平均
                 </div>
               </div>
             </div>
@@ -1024,327 +911,277 @@ export default function StoreDashboard({ user }) {
 
         {/* メインテーブル */}
         <div style={{ 
-          background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-          borderRadius: '16px',
-          padding: '20px',
-          marginBottom: '20px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+          backgroundColor: '#f8f9fa',
+          borderRadius: '6px',
+          padding: '15px',
+          border: '1px solid #dee2e6'
         }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '20px'
+          <h3 style={{
+            margin: '0 0 15px 0',
+            fontSize: '16px',
+            fontWeight: '600',
+            color: '#495057',
+            textAlign: 'center'
           }}>
-            <h3 style={{
-              margin: 0,
-              fontSize: '20px',
-              fontWeight: 'bold',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              textAlign: 'center'
-            }}>
-              📊 月次売上データ入力
-            </h3>
-          </div>
+            月次売上データ入力
+          </h3>
           
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            marginBottom: '0px' 
-          }}>
-            <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
-              <table style={{ 
-                borderCollapse: 'collapse', 
-                fontSize: '13px',
-                margin: '0 auto',
-                background: 'white',
-                borderRadius: '12px',
-                overflow: 'hidden',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
-                border: 'none'
-              }}>
-                <thead>
-                  <tr style={{ 
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white'
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ 
+              borderCollapse: 'collapse', 
+              fontSize: '12px',
+              margin: '0 auto',
+              backgroundColor: 'white',
+              borderRadius: '4px',
+              overflow: 'hidden',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+              border: '1px solid #dee2e6'
+            }}>
+              <thead>
+                <tr style={{ 
+                  backgroundColor: '#007bff',
+                  color: 'white'
+                }}>
+                  <th style={{ 
+                    padding: '8px 6px', 
+                    border: '1px solid rgba(255,255,255,0.2)', 
+                    textAlign: 'center', 
+                    width: '40px',
+                    fontSize: '12px',
+                    fontWeight: '500'
                   }}>
-                    <th style={{ 
-                      padding: '12px 8px', 
-                      border: 'none', 
-                      textAlign: 'center', 
-                      width: '40px',
-                      fontSize: '13px',
-                      fontWeight: 'bold'
+                    選択
+                  </th>
+                  <th style={{ 
+                    padding: '8px 6px', 
+                    border: '1px solid rgba(255,255,255,0.2)', 
+                    textAlign: 'center', 
+                    width: '70px',
+                    fontSize: '12px',
+                    fontWeight: '500'
+                  }}>
+                    日付
+                  </th>
+                  <th style={{ 
+                    padding: '8px 6px', 
+                    border: '1px solid rgba(255,255,255,0.2)', 
+                    textAlign: 'center', 
+                    width: '100px',
+                    fontSize: '12px',
+                    fontWeight: '500'
+                  }}>
+                    売上(税込)
+                  </th>
+                  <th style={{ 
+                    padding: '8px 6px', 
+                    border: '1px solid rgba(255,255,255,0.2)', 
+                    textAlign: 'center', 
+                    width: '60px',
+                    fontSize: '12px',
+                    fontWeight: '500'
+                  }}>
+                    客数
+                  </th>
+                  <th style={{ 
+                    padding: '8px 6px', 
+                    border: '1px solid rgba(255,255,255,0.2)', 
+                    textAlign: 'center', 
+                    width: '100px',
+                    fontSize: '12px',
+                    fontWeight: '500'
+                  }}>
+                    売上(税抜)
+                  </th>
+                  <th style={{ 
+                    padding: '8px 6px', 
+                    border: '1px solid rgba(255,255,255,0.2)', 
+                    textAlign: 'center', 
+                    width: '100px',
+                    fontSize: '12px',
+                    fontWeight: '500'
+                  }}>
+                    平均客単価
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
+                  const dayData = salesData[day] || { sales_amount: 0, customer_count: 0 }
+                  const exTaxAmount = calculateExTax(dayData.sales_amount)
+                  const avgPrice = calculateAvgCustomerPrice(dayData.sales_amount, dayData.customer_count)
+                  const { name: dayName, dayOfWeek } = getDayOfWeek(day)
+                  const dayColor = getDayColor(dayOfWeek)
+                  
+                  return (
+                    <tr key={day} style={{
+                      borderBottom: '1px solid #dee2e6'
                     }}>
-                      ✓
-                    </th>
-                    <th style={{ 
-                      padding: '12px 8px', 
-                      border: 'none', 
-                      textAlign: 'center', 
-                      width: '80px',
-                      fontSize: '13px',
-                      fontWeight: 'bold'
-                    }}>
-                      📅 日付
-                    </th>
-                    <th style={{ 
-                      padding: '12px 8px', 
-                      border: 'none', 
-                      textAlign: 'center', 
-                      width: '120px',
-                      fontSize: '13px',
-                      fontWeight: 'bold'
-                    }}>
-                      💰 売上(税込)
-                    </th>
-                    <th style={{ 
-                      padding: '12px 8px', 
-                      border: 'none', 
-                      textAlign: 'center', 
-                      width: '70px',
-                      fontSize: '13px',
-                      fontWeight: 'bold'
-                    }}>
-                      👥 客数
-                    </th>
-                    <th style={{ 
-                      padding: '12px 8px', 
-                      border: 'none', 
-                      textAlign: 'center', 
-                      width: '120px',
-                      fontSize: '13px',
-                      fontWeight: 'bold'
-                    }}>
-                      💵 売上(税抜)
-                    </th>
-                    <th style={{ 
-                      padding: '12px 8px', 
-                      border: 'none', 
-                      textAlign: 'center', 
-                      width: '120px',
-                      fontSize: '13px',
-                      fontWeight: 'bold'
-                    }}>
-                      📊 平均客単価
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
-                    const dayData = salesData[day] || { sales_amount: 0, customer_count: 0 }
-                    const exTaxAmount = calculateExTax(dayData.sales_amount)
-                    const avgPrice = calculateAvgCustomerPrice(dayData.sales_amount, dayData.customer_count)
-                    const { name: dayName, dayOfWeek } = getDayOfWeek(day)
-                    const dayColor = getDayColor(dayOfWeek)
-                    
-                    return (
-                      <tr key={day} style={{
-                        borderBottom: '1px solid #f1f3f4',
-                        transition: 'all 0.2s ease'
+                      <td style={{ 
+                        padding: '6px', 
+                        border: '1px solid #dee2e6', 
+                        textAlign: 'center',
+                        backgroundColor: '#f8f9fa'
                       }}>
-                        <td style={{ 
-                          padding: '8px', 
-                          border: 'none', 
-                          textAlign: 'center',
-                          width: '40px',
-                          background: 'linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%)'
-                        }}>
-                          <input
-                            type="checkbox"
-                            checked={selectedDays.has(day)}
-                            onChange={(e) => handleCheckboxChange(day, e.target.checked)}
-                            style={{
-                              cursor: 'pointer',
-                              transform: 'scale(1.2)',
-                              accentColor: '#667eea'
-                            }}
-                          />
-                        </td>
-                        <td style={{ 
-                          padding: '8px 6px', 
-                          border: 'none', 
-                          textAlign: 'center',
-                          fontWeight: 'bold',
-                          color: dayColor,
-                          width: '80px',
-                          fontSize: '12px',
-                          background: 'linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%)'
-                        }}>
-                          {day}({dayName})
-                        </td>
-                        <td style={{ 
-                          padding: '6px', 
-                          border: 'none', 
-                          width: '120px'
-                        }}>
-                          <input
-                            type="number"
-                            value={dayData.sales_amount || ''}
-                            onChange={(e) => handleInputChange(day, 'sales_amount', e.target.value)}
-                            style={{
-                              width: '100%',
-                              padding: '8px 10px',
-                              border: '2px solid #e2e8f0',
-                              borderRadius: '8px',
-                              textAlign: 'right',
-                              fontSize: '13px',
-                              backgroundColor: '#fff',
-                              outline: 'none',
-                              transition: 'all 0.2s ease',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
-                            }}
-                            placeholder=""
-                            min="0"
-                            onFocus={(e) => {
-                              e.target.style.borderColor = '#667eea'
-                              e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)'
-                            }}
-                            onBlur={(e) => {
-                              e.target.style.borderColor = '#e2e8f0'
-                              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.04)'
-                            }}
-                          />
-                        </td>
-                        <td style={{ 
-                          padding: '6px', 
-                          border: 'none', 
-                          width: '70px'
-                        }}>
-                          <input
-                            type="number"
-                            value={dayData.customer_count || ''}
-                            onChange={(e) => handleInputChange(day, 'customer_count', e.target.value)}
-                            style={{
-                              width: '100%',
-                              padding: '8px 10px',
-                              border: '2px solid #e2e8f0',
-                              borderRadius: '8px',
-                              textAlign: 'right',
-                              fontSize: '13px',
-                              backgroundColor: '#fff',
-                              outline: 'none',
-                              transition: 'all 0.2s ease',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
-                            }}
-                            placeholder=""
-                            min="0"
-                            onFocus={(e) => {
-                              e.target.style.borderColor = '#667eea'
-                              e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)'
-                            }}
-                            onBlur={(e) => {
-                              e.target.style.borderColor = '#e2e8f0'
-                              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.04)'
-                            }}
-                          />
-                        </td>
-                        <td style={{ 
-                          padding: '8px 10px', 
-                          border: 'none', 
-                          textAlign: 'right',
-                          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                          width: '120px',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          color: '#4a5568'
-                        }}>
-                          {exTaxAmount > 0 ? `¥${exTaxAmount.toLocaleString()}` : ''}
-                        </td>
-                        <td style={{ 
-                          padding: '8px 10px', 
-                          border: 'none', 
-                          textAlign: 'right',
-                          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                          width: '120px',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          color: '#4a5568'
-                        }}>
-                          {avgPrice > 0 ? `¥${avgPrice.toLocaleString()}` : ''}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr style={{ 
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    fontWeight: 'bold'
+                        <input
+                          type="checkbox"
+                          checked={selectedDays.has(day)}
+                          onChange={(e) => handleCheckboxChange(day, e.target.checked)}
+                          style={{
+                            cursor: 'pointer'
+                          }}
+                        />
+                      </td>
+                      <td style={{ 
+                        padding: '6px 4px', 
+                        border: '1px solid #dee2e6', 
+                        textAlign: 'center',
+                        fontWeight: '600',
+                        color: dayColor,
+                        fontSize: '11px',
+                        backgroundColor: '#f8f9fa'
+                      }}>
+                        {day}({dayName})
+                      </td>
+                      <td style={{ 
+                        padding: '4px', 
+                        border: '1px solid #dee2e6'
+                      }}>
+                        <input
+                          type="number"
+                          value={dayData.sales_amount || ''}
+                          onChange={(e) => handleInputChange(day, 'sales_amount', e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '4px 6px',
+                            border: '1px solid #ced4da',
+                            borderRadius: '2px',
+                            textAlign: 'right',
+                            fontSize: '11px',
+                            outline: 'none'
+                          }}
+                          placeholder=""
+                          min="0"
+                        />
+                      </td>
+                      <td style={{ 
+                        padding: '4px', 
+                        border: '1px solid #dee2e6'
+                      }}>
+                        <input
+                          type="number"
+                          value={dayData.customer_count || ''}
+                          onChange={(e) => handleInputChange(day, 'customer_count', e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '4px 6px',
+                            border: '1px solid #ced4da',
+                            borderRadius: '2px',
+                            textAlign: 'right',
+                            fontSize: '11px',
+                            outline: 'none'
+                          }}
+                          placeholder=""
+                          min="0"
+                        />
+                      </td>
+                      <td style={{ 
+                        padding: '6px 8px', 
+                        border: '1px solid #dee2e6', 
+                        textAlign: 'right',
+                        backgroundColor: '#f8f9fa',
+                        fontSize: '11px',
+                        color: '#495057'
+                      }}>
+                        {exTaxAmount > 0 ? `¥${exTaxAmount.toLocaleString()}` : ''}
+                      </td>
+                      <td style={{ 
+                        padding: '6px 8px', 
+                        border: '1px solid #dee2e6', 
+                        textAlign: 'right',
+                        backgroundColor: '#f8f9fa',
+                        fontSize: '11px',
+                        color: '#495057'
+                      }}>
+                        {avgPrice > 0 ? `¥${avgPrice.toLocaleString()}` : ''}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+              <tfoot>
+                <tr style={{ 
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  fontWeight: '600'
+                }}>
+                  <td style={{ 
+                    padding: '8px 6px', 
+                    border: '1px solid rgba(255,255,255,0.2)', 
+                    textAlign: 'center',
+                    fontSize: '12px'
                   }}>
-                    <td style={{ 
-                      padding: '12px 8px', 
-                      border: 'none', 
-                      textAlign: 'center',
-                      fontSize: '13px'
-                    }}>
-                      📊 月計
-                    </td>
-                    <td style={{ 
-                      padding: '12px 8px', 
-                      border: 'none', 
-                      textAlign: 'center',
-                      fontSize: '13px'
-                    }}>
-                      —
-                    </td>
-                    <td style={{ 
-                      padding: '12px 8px', 
-                      border: 'none', 
-                      textAlign: 'right',
-                      fontSize: '13px'
-                    }}>
-                      ¥{monthlyTotals.totalSales.toLocaleString()}
-                    </td>
-                    <td style={{ 
-                      padding: '12px 8px', 
-                      border: 'none', 
-                      textAlign: 'right',
-                      fontSize: '13px'
-                    }}>
-                      {monthlyTotals.totalCustomers}人
-                    </td>
-                    <td style={{ 
-                      padding: '12px 8px', 
-                      border: 'none', 
-                      textAlign: 'right',
-                      fontSize: '13px'
-                    }}>
-                      ¥{monthlyTotals.totalExTaxSales.toLocaleString()}
-                    </td>
-                    <td style={{ 
-                      padding: '12px 8px', 
-                      border: 'none', 
-                      textAlign: 'right',
-                      fontSize: '13px'
-                    }}>
-                      ¥{monthlyTotals.avgCustomerPrice.toLocaleString()}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                    月計
+                  </td>
+                  <td style={{ 
+                    padding: '8px 6px', 
+                    border: '1px solid rgba(255,255,255,0.2)', 
+                    textAlign: 'center',
+                    fontSize: '12px'
+                  }}>
+                    —
+                  </td>
+                  <td style={{ 
+                    padding: '8px 6px', 
+                    border: '1px solid rgba(255,255,255,0.2)', 
+                    textAlign: 'right',
+                    fontSize: '12px'
+                  }}>
+                    ¥{monthlyTotals.totalSales.toLocaleString()}
+                  </td>
+                  <td style={{ 
+                    padding: '8px 6px', 
+                    border: '1px solid rgba(255,255,255,0.2)', 
+                    textAlign: 'right',
+                    fontSize: '12px'
+                  }}>
+                    {monthlyTotals.totalCustomers}人
+                  </td>
+                  <td style={{ 
+                    padding: '8px 6px', 
+                    border: '1px solid rgba(255,255,255,0.2)', 
+                    textAlign: 'right',
+                    fontSize: '12px'
+                  }}>
+                    ¥{monthlyTotals.totalExTaxSales.toLocaleString()}
+                  </td>
+                  <td style={{ 
+                    padding: '8px 6px', 
+                    border: '1px solid rgba(255,255,255,0.2)', 
+                    textAlign: 'right',
+                    fontSize: '12px'
+                  }}>
+                    ¥{monthlyTotals.avgCustomerPrice.toLocaleString()}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
         </div>
         
         {/* ユーザー情報フッター */}
         <div style={{ 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          padding: '15px', 
-          borderRadius: '12px',
-          marginTop: '20px',
-          boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
+          backgroundColor: '#f8f9fa',
+          padding: '10px', 
+          borderRadius: '6px',
+          marginTop: '15px',
+          border: '1px solid #dee2e6'
         }}>
-          <h4 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>👤 ユーザー情報</h4>
-          <p style={{ margin: '4px 0', fontSize: '13px' }}>
-            <strong>🏪 店舗:</strong> {user.store_name}
+          <h4 style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: '600', color: '#495057' }}>ユーザー情報</h4>
+          <p style={{ margin: '2px 0', fontSize: '12px', color: '#6c757d' }}>
+            <strong>店舗:</strong> {user.store_name}
           </p>
-          <p style={{ margin: '4px 0', fontSize: '13px' }}>
-            <strong>👤 ユーザー:</strong> {user.username}
+          <p style={{ margin: '2px 0', fontSize: '12px', color: '#6c757d' }}>
+            <strong>ユーザー:</strong> {user.username}
           </p>
         </div>
       </div>
