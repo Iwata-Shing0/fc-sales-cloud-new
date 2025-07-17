@@ -553,12 +553,16 @@ export default function StoreDashboard({ user }) {
 
         {/* ヘッダーセクション */}
         <div style={{ 
+          position: 'sticky',
+          top: 0,
           backgroundColor: '#f8f9fa',
           color: '#495057',
           borderRadius: '6px',
           padding: '8px',
           marginBottom: '10px',
-          border: '1px solid #dee2e6'
+          border: '1px solid #dee2e6',
+          zIndex: 100,
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
         }}>
           
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
