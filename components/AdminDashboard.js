@@ -186,11 +186,8 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
     setLoadingRanking(true)
     try {
       const token = localStorage.getItem('token')
-      const currentDate = new Date()
-      const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
-      const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
       
-      const response = await fetch(`/api/sales/monthly/${currentDate.getFullYear()}/${currentDate.getMonth() + 1}`, {
+      const response = await fetch(`/api/sales/monthly/${currentYear}/${currentMonth}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       
@@ -420,17 +417,17 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
 
   const handleRankingCsvDownload = async () => {
     try {
-      const token = localStorage.getItem('token')
-      const currentDate = new Date()
-      const year = currentDate.getFullYear()
-      const month = currentDate.getMonth() + 1
-      
-      // CSV形式のデータを作成
-      const csvHeader = 'ランキング,店舗名,売上金額,客数,客単価,営業日数,日平均売上\n'
+      // CSV形式のデータを作成（6つのフィールド対応）
+      const csvHeader = 'ランキング,店舗名,売上(税込),売上(税抜),客単価,営業日数,日平均(税込),日平均(税抜)\n'
       const csvData = salesRanking.map((store, index) => {
         const ranking = index + 1
+        const taxInclusiveSales = store.total_sales
+        const taxExclusiveSales = Math.round(store.total_sales / 1.1)
         const avgCustomerPrice = store.total_customers > 0 ? Math.round(store.total_sales / store.total_customers) : 0
-        return `${ranking},${store.store_name},${store.total_sales},${store.total_customers},${avgCustomerPrice},${store.days_count},${Math.round(store.avg_daily_sales)}`
+        const avgDailyTaxInclusive = Math.round(store.avg_daily_sales)
+        const avgDailyTaxExclusive = Math.round(store.avg_daily_sales / 1.1)
+        
+        return `${ranking},${store.store_name},${taxInclusiveSales},${taxExclusiveSales},${avgCustomerPrice},${store.days_count},${avgDailyTaxInclusive},${avgDailyTaxExclusive}`
       }).join('\n')
       
       const csvContent = csvHeader + csvData
@@ -441,7 +438,7 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `売上ランキング_${year}年${month}月.csv`
+      a.download = `売上ランキング_${currentYear}年${currentMonth}月.csv`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -888,7 +885,7 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
       {activeTab === 'ranking' && (
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2>売上ランキング - {new Date().getFullYear()}年{new Date().getMonth() + 1}月</h2>
+            <h2>売上ランキング - {currentYear}年{currentMonth}月</h2>
             {salesRanking.length > 0 && (
               <button 
                 className="btn btn-secondary"
@@ -910,11 +907,12 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
                       <tr style={{ backgroundColor: '#f8f9fa' }}>
                         <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'center' }}>順位</th>
                         <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'left' }}>店舗名</th>
-                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>売上金額</th>
-                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>客数</th>
+                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>売上(税込)</th>
+                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>売上(税抜)</th>
                         <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>客単価</th>
                         <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>営業日数</th>
-                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>日平均売上</th>
+                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>日平均(税込)</th>
+                        <th style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>日平均(税抜)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -942,7 +940,7 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
                             {formatCurrency(store.total_sales)}
                           </td>
                           <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>
-                            {store.total_customers}人
+                            {formatCurrency(Math.round(store.total_sales / 1.1))}
                           </td>
                           <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>
                             {store.total_customers > 0 ? formatCurrency(Math.round(store.total_sales / store.total_customers)) : '¥0'}
@@ -952,6 +950,9 @@ const AdminDashboard = forwardRef(({ user }, ref) => {
                           </td>
                           <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>
                             {formatCurrency(Math.round(store.avg_daily_sales))}
+                          </td>
+                          <td style={{ padding: '12px', border: '1px solid #dee2e6', textAlign: 'right' }}>
+                            {formatCurrency(Math.round(store.avg_daily_sales / 1.1))}
                           </td>
                         </tr>
                       ))}
