@@ -553,21 +553,19 @@ export default function StoreDashboard({ user }) {
 
         {/* ヘッダーセクション */}
         <div style={{ 
-          backgroundColor: '#007bff',
-          color: 'white',
+          backgroundColor: '#f8f9fa',
+          color: '#495057',
           borderRadius: '6px',
-          padding: '12px',
-          marginBottom: '15px'
+          padding: '8px',
+          marginBottom: '10px',
+          border: '1px solid #dee2e6'
         }}>
-          <div style={{ textAlign: 'center', fontSize: '16px', marginBottom: '10px', fontWeight: '600' }}>
-            {user.store_name}
-          </div>
           
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
             <button 
               onClick={() => changeMonth(-1)}
               style={{
-                backgroundColor: 'rgba(255,255,255,0.2)',
+                backgroundColor: '#007bff',
                 color: 'white',
                 border: 'none',
                 padding: '6px 12px',
@@ -580,14 +578,14 @@ export default function StoreDashboard({ user }) {
               ← 前月
             </button>
             
-            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>
               {currentYear}年{currentMonth}月
             </h3>
             
             <button 
               onClick={() => changeMonth(1)}
               style={{
-                backgroundColor: 'rgba(255,255,255,0.2)',
+                backgroundColor: '#007bff',
                 color: 'white',
                 border: 'none',
                 padding: '6px 12px',
@@ -607,7 +605,7 @@ export default function StoreDashboard({ user }) {
               onClick={handleUpdateMonth}
               disabled={loading}
               style={{
-                backgroundColor: loading ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.2)',
+                backgroundColor: loading ? '#6c757d' : '#007bff',
                 color: 'white',
                 border: 'none',
                 padding: '6px 12px',
@@ -624,7 +622,7 @@ export default function StoreDashboard({ user }) {
               onClick={handleDeleteSelected}
               disabled={deleteLoading || selectedDays.size === 0}
               style={{
-                backgroundColor: (deleteLoading || selectedDays.size === 0) ? 'rgba(255,255,255,0.3)' : '#dc3545',
+                backgroundColor: (deleteLoading || selectedDays.size === 0) ? '#6c757d' : '#dc3545',
                 color: 'white',
                 border: 'none',
                 padding: '6px 12px',
@@ -664,7 +662,7 @@ export default function StoreDashboard({ user }) {
               onClick={() => fileInputRef.current?.click()}
               disabled={csvLoading}
               style={{
-                backgroundColor: csvLoading ? 'rgba(255,255,255,0.3)' : '#ffc107',
+                backgroundColor: csvLoading ? '#6c757d' : '#ffc107',
                 color: csvLoading ? 'white' : '#212529',
                 border: 'none',
                 padding: '6px 12px',
@@ -716,20 +714,17 @@ export default function StoreDashboard({ user }) {
         {/* 目標売上設定 */}
         <div style={{
           backgroundColor: '#f8f9fa',
-          padding: '12px',
+          padding: '8px',
           borderRadius: '6px',
-          marginBottom: '15px',
+          marginBottom: '10px',
           border: '1px solid #dee2e6'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#495057' }}>目標売上・進捗管理</h4>
-          </div>
 
           <div style={{ 
             display: 'flex', 
             alignItems: 'center', 
             gap: '10px', 
-            marginBottom: '12px',
+            marginBottom: '8px',
             flexWrap: 'wrap'
           }}>
             <span style={{ fontSize: '13px', fontWeight: '500', color: '#495057' }}>目標売上:</span>
@@ -819,7 +814,7 @@ export default function StoreDashboard({ user }) {
               <div style={{
                 backgroundColor: 'white',
                 border: '1px solid #dee2e6',
-                padding: '10px',
+                padding: '8px',
                 borderRadius: '4px',
                 textAlign: 'center'
               }}>
@@ -833,7 +828,7 @@ export default function StoreDashboard({ user }) {
               <div style={{
                 backgroundColor: 'white',
                 border: '1px solid #dee2e6',
-                padding: '10px',
+                padding: '8px',
                 borderRadius: '4px',
                 textAlign: 'center'
               }}>
@@ -847,7 +842,7 @@ export default function StoreDashboard({ user }) {
               <div style={{
                 backgroundColor: 'white',
                 border: '1px solid #dee2e6',
-                padding: '10px',
+                padding: '8px',
                 borderRadius: '4px',
                 textAlign: 'center'
               }}>
@@ -865,7 +860,7 @@ export default function StoreDashboard({ user }) {
               <div style={{
                 backgroundColor: 'white',
                 border: '1px solid #dee2e6',
-                padding: '10px',
+                padding: '8px',
                 borderRadius: '4px',
                 textAlign: 'center'
               }}>
@@ -873,16 +868,13 @@ export default function StoreDashboard({ user }) {
                 <div style={{ fontSize: '14px', fontWeight: '600', color: '#6c757d' }}>
                   {progressData.planProgress.toFixed(1)}%
                 </div>
-                <div style={{ fontSize: '9px', color: '#adb5bd' }}>
-                  ({progressData.targetDay}/{daysInMonth}日)
-                </div>
               </div>
 
               {/* 日平均売上 */}
               <div style={{
                 backgroundColor: 'white',
                 border: '1px solid #dee2e6',
-                padding: '10px',
+                padding: '8px',
                 borderRadius: '4px',
                 textAlign: 'center'
               }}>
@@ -896,7 +888,7 @@ export default function StoreDashboard({ user }) {
               <div style={{
                 backgroundColor: 'white',
                 border: '1px solid #dee2e6',
-                padding: '10px',
+                padding: '8px',
                 borderRadius: '4px',
                 textAlign: 'center'
               }}>
@@ -913,12 +905,12 @@ export default function StoreDashboard({ user }) {
         <div style={{ 
           backgroundColor: '#f8f9fa',
           borderRadius: '6px',
-          padding: '15px',
+          padding: '10px',
           border: '1px solid #dee2e6'
         }}>
           <h3 style={{
-            margin: '0 0 15px 0',
-            fontSize: '16px',
+            margin: '0 0 10px 0',
+            fontSize: '14px',
             fontWeight: '600',
             color: '#495057',
             textAlign: 'center'
@@ -1171,12 +1163,12 @@ export default function StoreDashboard({ user }) {
         {/* ユーザー情報フッター */}
         <div style={{ 
           backgroundColor: '#f8f9fa',
-          padding: '10px', 
+          padding: '8px', 
           borderRadius: '6px',
-          marginTop: '15px',
+          marginTop: '10px',
           border: '1px solid #dee2e6'
         }}>
-          <h4 style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: '600', color: '#495057' }}>ユーザー情報</h4>
+          <h4 style={{ margin: '0 0 4px 0', fontSize: '12px', fontWeight: '600', color: '#495057' }}>ユーザー情報</h4>
           <p style={{ margin: '2px 0', fontSize: '12px', color: '#6c757d' }}>
             <strong>店舗:</strong> {user.store_name}
           </p>
