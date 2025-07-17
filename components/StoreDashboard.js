@@ -189,7 +189,7 @@ export default function StoreDashboard({ user }) {
       if (response.ok) {
         setMessage(`${selectedDays.size}日分のデータを削除しました`)
         setSelectedDays(new Set())
-        fetchSalesData()
+        fetchMonthlySalesData()
       } else {
         setMessage('削除に失敗しました')
       }
